@@ -65,3 +65,4 @@ npm run lint
 - Jest for unit testing
 - Each class has corresponding test file
 - Tests focus on individual component behavior
+- TTD write and run tests as you code
