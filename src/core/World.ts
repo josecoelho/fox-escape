@@ -62,24 +62,33 @@ export class World {
     // Create a very visible graphic indicator at the top of the screen
     this.statusGraphic = new PIXI.Graphics();
     
-    // Create a large colored rectangle at the top
-    this.statusGraphic.beginFill(0x00FF00, 0.7); // Semi-transparent green
-    this.statusGraphic.drawRect(0, 0, this.mapConfig.width, 50);
+    // Create a colored rectangle at the top - not full width but more centered
+    const barWidth = 250; // Fixed width bar instead of full screen
+    const barHeight = 40; // Slightly smaller height
+    
+    this.statusGraphic.beginFill(0x00FF00, 0.6); // Slightly more transparent
+    this.statusGraphic.drawRoundedRect(
+      (this.mapConfig.width - barWidth) / 2,  // Center horizontally
+      10,  // Small margin from top
+      barWidth, 
+      barHeight,
+      10  // Rounded corners
+    );
     this.statusGraphic.endFill();
     
     // Add a text label in the center
-    const hideLabel = new PIXI.Text('HIDE AVAILABLE - PRESS SPACE', {
+    const hideLabel = new PIXI.Text('HIDE READY [SPACE]', {
       fontFamily: 'Arial',
-      fontSize: 24,
+      fontSize: 20,
       fontWeight: 'bold',
       fill: 0xFFFFFF,
       stroke: 0x000000,
-      strokeThickness: 4,
+      strokeThickness: 3,
       align: 'center',
     });
     
     hideLabel.anchor.set(0.5);
-    hideLabel.position.set(this.mapConfig.width / 2, 25);
+    hideLabel.position.set(this.mapConfig.width / 2, 30);
     this.statusGraphic.addChild(hideLabel);
     
     // Add to the stage directly, not the container
@@ -94,37 +103,42 @@ export class World {
   private updateStatusGraphic(): void {
     if (!this.statusGraphic || !this.fox) return;
     
+    const barWidth = 250;
+    const barHeight = 40;
+    const barX = (this.mapConfig.width - barWidth) / 2;
+    const barY = 10;
+    
     if (this.fox.isHidden()) {
       // Fox is hiding - show active state
       this.statusGraphic.clear();
-      this.statusGraphic.beginFill(0x00FFFF, 0.7); // Cyan
-      this.statusGraphic.drawRect(0, 0, this.mapConfig.width, 50);
+      this.statusGraphic.beginFill(0x00FFFF, 0.6); // Cyan, semi-transparent
+      this.statusGraphic.drawRoundedRect(barX, barY, barWidth, barHeight, 10);
       this.statusGraphic.endFill();
       
       const remainingTime = Math.ceil(this.fox.getHideDurationRemaining());
       const hideLabel = this.statusGraphic.getChildAt(0) as PIXI.Text;
-      hideLabel.text = `HIDING ACTIVE - ${remainingTime}s LEFT`;
+      hideLabel.text = `HIDING: ${remainingTime}s`;
       
     } else if (this.fox.getHideCooldownRemaining() > 0) {
       // Fox is on cooldown
       this.statusGraphic.clear();
-      this.statusGraphic.beginFill(0xFF0000, 0.7); // Red
-      this.statusGraphic.drawRect(0, 0, this.mapConfig.width, 50);
+      this.statusGraphic.beginFill(0xFF0000, 0.6); // Red, semi-transparent
+      this.statusGraphic.drawRoundedRect(barX, barY, barWidth, barHeight, 10);
       this.statusGraphic.endFill();
       
       const cooldownTime = Math.ceil(this.fox.getHideCooldownRemaining());
       const hideLabel = this.statusGraphic.getChildAt(0) as PIXI.Text;
-      hideLabel.text = `HIDING ON COOLDOWN - ${cooldownTime}s`;
+      hideLabel.text = `COOLDOWN: ${cooldownTime}s`;
       
     } else {
       // Ready to hide
       this.statusGraphic.clear();
-      this.statusGraphic.beginFill(0x00FF00, 0.7); // Green
-      this.statusGraphic.drawRect(0, 0, this.mapConfig.width, 50);
+      this.statusGraphic.beginFill(0x00FF00, 0.6); // Green, semi-transparent
+      this.statusGraphic.drawRoundedRect(barX, barY, barWidth, barHeight, 10);
       this.statusGraphic.endFill();
       
       const hideLabel = this.statusGraphic.getChildAt(0) as PIXI.Text;
-      hideLabel.text = `HIDE AVAILABLE - PRESS SPACE`;
+      hideLabel.text = `HIDE READY [SPACE]`;
     }
   }
   
@@ -147,54 +161,8 @@ export class World {
     this.scoreText.position.set(20, 20);
     uiContainer.addChild(this.scoreText);
     
-    // Fox ability cooldown display - make it VERY prominent
-    this.foxAbilityText = new PIXI.Text('HIDE: READY! [SPACE]', {
-      fontFamily: 'Arial',
-      fontSize: 28,
-      fill: 0x00FF00, // Start with green for "ready"
-      stroke: 0x000000,
-      strokeThickness: 4,
-      dropShadow: true,
-      dropShadowColor: '#000000',
-      dropShadowBlur: 6,
-      dropShadowDistance: 3
-    });
-    
-    // Create background for better visibility
-    const textMetrics = PIXI.TextMetrics.measureText(
-      'HIDE COOLDOWN: 10s', 
-      new PIXI.TextStyle({
-        fontFamily: 'Arial',
-        fontSize: 28
-      })
-    );
-    
-    const padding = 10;
-    const background = new PIXI.Graphics();
-    background.beginFill(0x000000, 0.5);
-    background.drawRect(
-      0, 
-      0, 
-      textMetrics.width + padding * 2, 
-      textMetrics.height + padding * 2
-    );
-    background.endFill();
-    
-    // Group the text and background
-    const hideStatusContainer = new PIXI.Container();
-    hideStatusContainer.addChild(background);
-    hideStatusContainer.addChild(this.foxAbilityText);
-    
-    // Position text within background
-    this.foxAbilityText.position.set(padding, padding);
-    
-    // Position the group at the top center
-    hideStatusContainer.position.set(
-      this.mapConfig.width / 2 - (textMetrics.width + padding * 2) / 2, 
-      20
-    );
-    
-    uiContainer.addChild(hideStatusContainer);
+    // We're not using foxAbilityText anymore since we have the status bar
+    this.foxAbilityText = null;
     
     // Force container to display above other elements
     this.container.sortChildren();
@@ -439,30 +407,6 @@ export class World {
       if (this.scoreText) {
         this.scoreText.text = `Score: ${this.gameState.getScore()}`;
       }
-      
-      // Update fox ability cooldown UI
-      if (this.foxAbilityText && this.foxAbilityText.style) {
-        if (this.fox.isHidden()) {
-          const durationRemaining = Math.ceil(this.fox.getHideDurationRemaining());
-          this.foxAbilityText.text = `HIDING: ${durationRemaining}s left`;
-          if (this.foxAbilityText.style.fill !== undefined) {
-            this.foxAbilityText.style.fill = 0x00FF00; // Green when active
-          }
-        } else {
-          const cooldownRemaining = Math.ceil(this.fox.getHideCooldownRemaining());
-          if (cooldownRemaining > 0) {
-            this.foxAbilityText.text = `HIDE COOLDOWN: ${cooldownRemaining}s`;
-            if (this.foxAbilityText.style.fill !== undefined) {
-              this.foxAbilityText.style.fill = 0xFF0000; // Red while on cooldown
-            }
-          } else {
-            this.foxAbilityText.text = `HIDE: READY! [SPACE]`;
-            if (this.foxAbilityText.style.fill !== undefined) {
-              this.foxAbilityText.style.fill = 0x00FF00; // Green when ready
-            }
-          }
-        }
-      }
     }
     
     // Update dragon based on player 2 input
@@ -663,9 +607,9 @@ export class World {
       this.gameState.resize(width, height);
     }
     
-    // Reposition score text
-    if (this.scoreText) {
-      this.scoreText.position.set(20, 20);
+    // First clean up the old status bar
+    if (this.statusGraphic && this.statusGraphic.parent) {
+      this.statusGraphic.parent.removeChild(this.statusGraphic);
     }
     
     // Recreate the UI for the resized screen
@@ -682,6 +626,8 @@ export class World {
     
     // Recreate UI elements
     this.createUI();
+    
+    // Create a new status bar with correct dimensions
     this.createDirectUI();
   }
   
