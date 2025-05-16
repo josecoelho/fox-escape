@@ -3,6 +3,7 @@ import { Entity } from './Entity';
 import { Vector2 } from '../utils/Vector2';
 import { InputManager } from '../core/InputManager';
 import { Fireball } from './Fireball';
+import { Hunter } from './Hunter';
 
 export class Dragon extends Entity {
   private speed: number = 150;
@@ -34,6 +35,9 @@ export class Dragon extends Entity {
     return this.timeSinceLastFireball >= this.fireballCooldown;
   }
   
+  /**
+   * Shoots a fireball in the direction of the dragon's movement
+   */
   public shootFireball(): Fireball | null {
     if (!this.canShoot()) {
       return null;
@@ -46,6 +50,29 @@ export class Dragon extends Entity {
       this.position.copy(),
       PIXI.Texture.from('fireball.png'),
       this.getShootingDirection()
+    );
+    
+    return fireball;
+  }
+  
+  /**
+   * Shoots a fireball toward the target position
+   */
+  public shootFireballAt(targetPosition: Vector2): Fireball | null {
+    if (!this.canShoot()) {
+      return null;
+    }
+    
+    this.timeSinceLastFireball = 0;
+    
+    // Calculate direction to target
+    const direction = Vector2.subtract(targetPosition, this.position).normalize();
+    
+    // Create a new fireball starting at dragon's position
+    const fireball = new Fireball(
+      this.position.copy(),
+      PIXI.Texture.from('fireball.png'),
+      direction
     );
     
     return fireball;

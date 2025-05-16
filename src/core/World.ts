@@ -168,8 +168,14 @@ export class World {
       this.dragon.update(deltaTime, inputManager, 'player2');
       
       // Handle dragon shooting fireballs
+      // Use Space for regular fireballs
       if (inputManager.isKeyPressed('Space') && this.dragon.canShoot()) {
         this.createFireball();
+      }
+      
+      // Use 'f' key to shoot at the closest hunter
+      if (inputManager.isKeyPressed('f') && this.dragon.canShoot()) {
+        this.createFireballAtClosestHunter();
       }
     }
     
@@ -200,6 +206,41 @@ export class World {
     const fireball = this.dragon.shootFireball();
     if (fireball) {
       this.addEntity(fireball);
+    }
+  }
+  
+  /**
+   * Creates a fireball that targets the closest active hunter
+   */
+  private createFireballAtClosestHunter(): void {
+    if (!this.dragon) return;
+    
+    // Get active hunters only
+    const activeHunters = this.hunters.filter(hunter => hunter.isActive);
+    
+    if (activeHunters.length === 0) return;
+    
+    // Find the closest hunter to the dragon
+    let closestHunter = activeHunters[0];
+    let closestDistance = Vector2.distance(this.dragon.position, closestHunter.position);
+    
+    for (let i = 1; i < activeHunters.length; i++) {
+      const hunter = activeHunters[i];
+      const distance = Vector2.distance(this.dragon.position, hunter.position);
+      
+      if (distance < closestDistance) {
+        closestDistance = distance;
+        closestHunter = hunter;
+      }
+    }
+    
+    // Create a fireball targeted at the closest hunter
+    const fireball = this.dragon.shootFireballAt(closestHunter.position);
+    if (fireball) {
+      this.addEntity(fireball);
+      
+      // Visual indicator for debugging
+      console.log(`Dragon shooting at hunter at position (${closestHunter.position.x.toFixed(0)}, ${closestHunter.position.y.toFixed(0)})`);
     }
   }
   
