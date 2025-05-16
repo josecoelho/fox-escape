@@ -25,6 +25,7 @@ export class World {
   private assetManager: AssetManager;
   private gameState: GameState | null = null;
   private scoreText: PIXI.Text | null = null;
+  private foodCountText: PIXI.Text | null = null;
   
   private stage: PIXI.Container;
 
@@ -161,6 +162,17 @@ export class World {
     this.scoreText.position.set(20, 20);
     uiContainer.addChild(this.scoreText);
     
+    // Food count display
+    this.foodCountText = new PIXI.Text('Food: 0', {
+      fontFamily: 'Arial',
+      fontSize: 24,
+      fill: 0xFFFF00, // Yellow for food
+      stroke: 0x000000,
+      strokeThickness: 3
+    });
+    this.foodCountText.position.set(20, 55);
+    uiContainer.addChild(this.foodCountText);
+    
     // We're not using foxAbilityText anymore since we have the status bar
     this.foxAbilityText = null;
     
@@ -218,32 +230,59 @@ export class World {
   }
   
   private createFood(): void {
+    // Create initial food items
     for (let i = 0; i < this.mapConfig.foodCount; i++) {
-      let position: Vector2;
-      let isValidPosition = false;
+      this.spawnFood();
+    }
+  }
+  
+  /**
+   * Spawns a single food item at a random valid position
+   * @returns The newly created food or null if spawning failed
+   */
+  public spawnFood(): Food | null {
+    let position: Vector2;
+    let isValidPosition = false;
+    let attempts = 0;
+    const maxAttempts = 30; // Prevent infinite loops
+    
+    // Find a position that doesn't overlap with obstacles or other entities
+    while (!isValidPosition && attempts < maxAttempts) {
+      attempts++;
       
-      // Find a position that doesn't overlap with obstacles
-      while (!isValidPosition) {
-        position = new Vector2(
-          Math.random() * this.mapConfig.width,
-          Math.random() * this.mapConfig.height
+      // Place food randomly, but favor locations away from the edges
+      position = new Vector2(
+        this.mapConfig.width * 0.1 + Math.random() * this.mapConfig.width * 0.8,
+        this.mapConfig.height * 0.1 + Math.random() * this.mapConfig.height * 0.8
+      );
+      
+      // Check collision with obstacles
+      isValidPosition = !this.obstacles.some(obstacle => 
+        this.collisionSystem.checkCollision(
+          position.x, position.y, 20, 20,
+          obstacle.position.x, obstacle.position.y, 
+          obstacle.width, obstacle.height
+        )
+      );
+      
+      // Also check minimum distance from existing food to prevent clustering
+      if (isValidPosition) {
+        const minDistanceBetweenFood = 100;
+        isValidPosition = !this.foods.some(food => 
+          Vector2.distance(position, food.position) < minDistanceBetweenFood
         );
-        
-        isValidPosition = !this.obstacles.some(obstacle => 
-          this.collisionSystem.checkCollision(
-            position.x, position.y, 20, 20,
-            obstacle.position.x, obstacle.position.y, 
-            obstacle.width, obstacle.height
-          )
-        );
-        
-        if (isValidPosition) {
-          const food = new Food(position, this.assetManager.getTexture('food.png'));
-          this.foods.push(food);
-          this.addEntity(food);
-        }
       }
     }
+    
+    // If we found a valid position, create the food
+    if (isValidPosition) {
+      const food = new Food(position, this.assetManager.getTexture('food.png'));
+      this.foods.push(food);
+      this.addEntity(food);
+      return food;
+    }
+    
+    return null;
   }
   
   private createFox(): void {
@@ -407,13 +446,23 @@ export class World {
       this.spawnHunter();
     }
     
+    // Check for respawning food
+    // Only spawn more food if there are active fox players to collect it
+    if (this.fox && this.fox.isActive && this.gameState.shouldSpawnFood(this.foods.filter(food => food.isActive).length)) {
+      this.spawnFood();
+    }
+    
     // Update fox based on player 1 input
     if (this.fox) {
       this.fox.update(deltaTime, inputManager, 'player1');
       
-      // Update score based on food collected
+      // Update score and food count UI
       if (this.scoreText) {
         this.scoreText.text = `Score: ${this.gameState.getScore()}`;
+      }
+      
+      if (this.foodCountText) {
+        this.foodCountText.text = `Food: ${this.fox.getFoodCollected()}`;
       }
     }
     

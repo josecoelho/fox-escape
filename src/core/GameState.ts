@@ -14,6 +14,9 @@ export class GameState {
   private difficulty: number = 1;
   private hunterSpawnInterval: number = 5; // Seconds between hunter spawns
   private timeSinceLastSpawn: number = 0;
+  private foodSpawnInterval: number = 12; // Seconds between food spawns (longer than hunters)
+  private timeSinceLastFoodSpawn: number = 0;
+  private maxFoodOnMap: number = 5; // Maximum food items on map at once
   private score: number = 0;
   
   constructor(stage: PIXI.Container) {
@@ -90,6 +93,7 @@ export class GameState {
   private resetGame(): void {
     this.difficulty = 1;
     this.timeSinceLastSpawn = 0;
+    this.timeSinceLastFoodSpawn = 0;
     this.score = 0;
   }
   
@@ -184,6 +188,9 @@ export class GameState {
       
       // Track time since last hunter spawn
       this.timeSinceLastSpawn += deltaTime;
+      
+      // Track time since last food spawn
+      this.timeSinceLastFoodSpawn += deltaTime;
     }
   }
   
@@ -196,6 +203,26 @@ export class GameState {
     const spawnTime = this.hunterSpawnInterval / this.difficulty;
     if (this.timeSinceLastSpawn >= spawnTime) {
       this.timeSinceLastSpawn = 0;
+      return true;
+    }
+    
+    return false;
+  }
+  
+  public shouldSpawnFood(currentFoodCount: number): boolean {
+    // Only spawn food during gameplay
+    if (this.type !== GameStateType.PLAYING) return false;
+    
+    // Don't spawn if we've reached the maximum food count
+    if (currentFoodCount >= this.maxFoodOnMap) return false;
+    
+    // Food spawn interval increases slightly with difficulty
+    // This makes food slightly rarer as game progresses
+    const adjustedInterval = this.foodSpawnInterval * Math.sqrt(this.difficulty);
+    
+    // Check if it's time to spawn new food
+    if (this.timeSinceLastFoodSpawn >= adjustedInterval) {
+      this.timeSinceLastFoodSpawn = 0;
       return true;
     }
     
