@@ -46,10 +46,25 @@ export class World {
   }
   
   private createBackground(): void {
-    const bg = PIXI.Sprite.from(this.assetManager.getTexture(this.mapConfig.textures.background));
-    bg.width = this.mapConfig.width;
-    bg.height = this.mapConfig.height;
-    this.container.addChild(bg);
+    // Create a tiling sprite for the background
+    const texture = this.assetManager.getTexture(this.mapConfig.textures.background);
+    
+    // Define the size of a single tile (smaller than full size)
+    const tileWidth = 256;
+    const tileHeight = 256;
+    
+    // Create a TilingSprite that repeats the texture
+    const tilingSprite = new PIXI.TilingSprite(
+      texture,
+      this.mapConfig.width,
+      this.mapConfig.height
+    );
+    
+    // Set the tile size to create a repeating pattern
+    tilingSprite.tileScale.set(0.25, 0.25);
+    
+    // Add the tiling sprite to the container
+    this.container.addChild(tilingSprite);
   }
   
   private createObstacles(): void {

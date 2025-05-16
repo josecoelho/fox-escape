@@ -19,11 +19,20 @@ jest.mock('pixi.js', () => {
     height: 0
   };
   
+  const mockTilingSprite = {
+    width: 0,
+    height: 0,
+    tileScale: {
+      set: jest.fn()
+    }
+  };
+  
   return {
     Container: jest.fn().mockImplementation(() => mockContainer),
     Sprite: {
       from: jest.fn().mockReturnValue(mockSprite)
-    }
+    },
+    TilingSprite: jest.fn().mockImplementation(() => mockTilingSprite)
   };
 });
 

@@ -29,17 +29,17 @@ export const forestMap: MapConfig = {
     obstacles: ['tree.png', 'rock.png']
   },
   obstacles: [
-    { x: 200, y: 200, width: 80, height: 80 },
-    { x: 500, y: 300, width: 80, height: 80 },
-    { x: 700, y: 500, width: 60, height: 60 },
-    { x: 300, y: 700, width: 80, height: 80 },
-    { x: 900, y: 200, width: 80, height: 80 },
-    { x: 1100, y: 400, width: 60, height: 60 },
-    { x: 1300, y: 600, width: 80, height: 80 },
-    { x: 400, y: 900, width: 80, height: 80 },
-    { x: 600, y: 1000, width: 60, height: 60 },
-    { x: 1000, y: 800, width: 80, height: 80 },
-    { x: 1200, y: 900, width: 60, height: 60 }
+    { x: 200, y: 200, width: 120, height: 120 },
+    { x: 500, y: 300, width: 120, height: 120 },
+    { x: 700, y: 500, width: 100, height: 100 },
+    { x: 300, y: 700, width: 120, height: 120 },
+    { x: 900, y: 200, width: 120, height: 120 },
+    { x: 1100, y: 400, width: 100, height: 100 },
+    { x: 1300, y: 600, width: 120, height: 120 },
+    { x: 400, y: 900, width: 120, height: 120 },
+    { x: 600, y: 1000, width: 100, height: 100 },
+    { x: 1000, y: 800, width: 120, height: 120 },
+    { x: 1200, y: 900, width: 100, height: 100 }
   ]
 };
 
@@ -54,17 +54,17 @@ export const meadowMap: MapConfig = {
     obstacles: ['rock.png']
   },
   obstacles: [
-    { x: 300, y: 300, width: 60, height: 60 },
-    { x: 600, y: 400, width: 60, height: 60 },
-    { x: 900, y: 600, width: 40, height: 40 },
-    { x: 400, y: 800, width: 60, height: 60 },
-    { x: 1000, y: 300, width: 60, height: 60 },
-    { x: 1200, y: 500, width: 40, height: 40 },
-    { x: 1400, y: 700, width: 60, height: 60 },
-    { x: 500, y: 1000, width: 60, height: 60 },
-    { x: 700, y: 1100, width: 40, height: 40 },
-    { x: 1100, y: 900, width: 60, height: 60 },
-    { x: 1300, y: 1000, width: 40, height: 40 },
-    { x: 1500, y: 1200, width: 60, height: 60 }
+    { x: 300, y: 300, width: 90, height: 90 },
+    { x: 600, y: 400, width: 90, height: 90 },
+    { x: 900, y: 600, width: 80, height: 80 },
+    { x: 400, y: 800, width: 90, height: 90 },
+    { x: 1000, y: 300, width: 90, height: 90 },
+    { x: 1200, y: 500, width: 80, height: 80 },
+    { x: 1400, y: 700, width: 90, height: 90 },
+    { x: 500, y: 1000, width: 90, height: 90 },
+    { x: 700, y: 1100, width: 80, height: 80 },
+    { x: 1100, y: 900, width: 90, height: 90 },
+    { x: 1300, y: 1000, width: 80, height: 80 },
+    { x: 1500, y: 1200, width: 90, height: 90 }
   ]
 };
