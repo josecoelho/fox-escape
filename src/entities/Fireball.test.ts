@@ -15,12 +15,16 @@ jest.mock('pixi.js', () => {
     position: {
       set: jest.fn()
     },
+    scale: {
+      set: jest.fn()
+    },
     rotation: 0,
     filters: [],
     visible: true,
     width: 20,
     height: 20,
-    destroy: jest.fn()
+    destroy: jest.fn(),
+    tint: 0
   };
   
   return {

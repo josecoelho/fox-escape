@@ -64,6 +64,17 @@ jest.mock('../entities/Dragon', () => ({
       type: 'fireball',
       destroy: jest.fn()
     }),
+    shootFireballAt: jest.fn().mockReturnValue({
+      position: new Vector2(50, 50),
+      width: 10,
+      height: 10,
+      sprite: {},
+      update: jest.fn(),
+      isActive: true,
+      deactivate: jest.fn(),
+      type: 'fireball',
+      destroy: jest.fn()
+    }),
     type: 'dragon',
     destroy: jest.fn()
   }))
@@ -201,6 +212,54 @@ describe('World', () => {
     expect(dragonShootSpy).toHaveBeenCalled();
     // @ts-ignore - check if fireball was added
     expect(world['entities'].some(e => e.type === 'fireball')).toBeTruthy();
+  });
+
+  test('dragon should shoot fireball at closest hunter when f key is pressed', () => {
+    world.init();
+    
+    const mockInputManager = {
+      isKeyPressed: jest.fn((key) => key === 'f')
+    } as unknown as InputManager;
+    
+    // Create multiple hunters at different distances from the dragon
+    // @ts-ignore - accessing private properties for testing
+    world['hunters'] = [
+      // Using the same mock implementation as defined in the hunter mock at the top
+      new (jest.requireMock('../entities/Hunter').Hunter)(),
+      new (jest.requireMock('../entities/Hunter').Hunter)()
+    ];
+
+    // Override positions to ensure the first hunter is closer
+    world['hunters'][0].position = new Vector2(100, 100);
+    world['hunters'][1].position = new Vector2(200, 200);
+    
+    // @ts-ignore - accessing private properties for testing
+    const dragonShootAtSpy = jest.spyOn(world['dragon']!, 'shootFireballAt');
+    
+    // Restore actual implementation for the relevant function
+    // @ts-ignore - accessing private method
+    const originalMethod = world['createFireballAtClosestHunter'];
+    
+    // Spy on console.log
+    const consoleLogSpy = jest.spyOn(console, 'log');
+    
+    world.update(0.16, mockInputManager);
+    
+    // The closest hunter should be at (100, 100)
+    expect(dragonShootAtSpy).toHaveBeenCalledWith(expect.objectContaining({
+      x: 100,
+      y: 100
+    }));
+    
+    // Verify firebal was added to entities
+    // @ts-ignore - check if fireball was added
+    expect(world['entities'].some(e => e.type === 'fireball')).toBeTruthy();
+    
+    // Verify debug message was logged
+    expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringMatching(/Dragon shooting at hunter at position/));
+    
+    // Restore the spy
+    consoleLogSpy.mockRestore();
   });
   
   test('destroy should clean up all entities', () => {

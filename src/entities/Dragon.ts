@@ -47,13 +47,24 @@ export class Dragon extends Entity {
     
     // Create a new fireball starting at dragon's position
     try {
-      // Create a simple graphic for the fireball in case texture loading fails
-      const fireballGraphics = new PIXI.Graphics();
-      fireballGraphics.beginFill(0xFF0000);  // Red color
-      fireballGraphics.drawCircle(0, 0, 10); // Circle with radius 10
-      fireballGraphics.endFill();
+      // Use a basic red circle texture for the fireball
+      // Instead of trying to create a texture from graphics (which causes runtime errors),
+      // let's use a basic colored circle using a render texture
       
-      const fireballTexture = PIXI.Texture.from(fireballGraphics);
+      // Create a simple 20x20 canvas with a red circle
+      const canvas = document.createElement('canvas');
+      canvas.width = 20;
+      canvas.height = 20;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.beginPath();
+        ctx.arc(10, 10, 8, 0, Math.PI * 2);
+        ctx.fillStyle = '#FF0000';
+        ctx.fill();
+      }
+      
+      // Create a texture from the canvas
+      const fireballTexture = PIXI.Texture.from(canvas);
       
       const fireball = new Fireball(
         this.position.copy(),
@@ -80,13 +91,24 @@ export class Dragon extends Entity {
     this.timeSinceLastFireball = 0;
     
     try {
-      // Create a simple graphic for the fireball in case texture loading fails
-      const fireballGraphics = new PIXI.Graphics();
-      fireballGraphics.beginFill(0xFF0000);  // Red color
-      fireballGraphics.drawCircle(0, 0, 10); // Circle with radius 10
-      fireballGraphics.endFill();
+      // Use a basic red circle texture for the fireball
+      // Instead of trying to create a texture from graphics (which causes runtime errors),
+      // let's use a basic colored circle using a render texture
       
-      const fireballTexture = PIXI.Texture.from(fireballGraphics);
+      // Create a simple 20x20 canvas with a red circle
+      const canvas = document.createElement('canvas');
+      canvas.width = 20;
+      canvas.height = 20;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.beginPath();
+        ctx.arc(10, 10, 8, 0, Math.PI * 2);
+        ctx.fillStyle = '#FF0000';
+        ctx.fill();
+      }
+      
+      // Create a texture from the canvas
+      const fireballTexture = PIXI.Texture.from(canvas);
       
       // Calculate direction to target
       const direction = Vector2.subtract(targetPosition, this.position).normalize();

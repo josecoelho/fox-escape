@@ -45,7 +45,7 @@ describe('AssetManager', () => {
     const texture = assetManager.getTexture('fox.png');
     expect(texture).toBeDefined();
     // @ts-ignore - access mock property
-    expect(texture._mockUrlProperty).toBe('assets/fox.png');
+    expect(texture._mockUrlProperty).toBe('/characters/fox.png');
   });
   
   test('getTexture should return WHITE texture for nonexistent key', async () => {
