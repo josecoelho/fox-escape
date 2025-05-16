@@ -62,12 +62,17 @@ export class World {
     // Fox ability cooldown display
     this.foxAbilityText = new PIXI.Text('Hide: Ready', {
       fontFamily: 'Arial',
-      fontSize: 20,
-      fill: 0xFFFFFF,
+      fontSize: 24,
+      fill: 0x00FF00, // Start with green for "ready"
       stroke: 0x000000,
-      strokeThickness: 2
+      strokeThickness: 3,
+      dropShadow: true,
+      dropShadowColor: '#000000',
+      dropShadowBlur: 4,
+      dropShadowDistance: 2
     });
-    this.foxAbilityText.position.set(20, 60);
+    // Position it in the top center of the screen
+    this.foxAbilityText.position.set(this.mapConfig.width / 2 - 80, 20);
     this.container.addChild(this.foxAbilityText);
   }
   
@@ -315,21 +320,21 @@ export class World {
       if (this.foxAbilityText && this.foxAbilityText.style) {
         if (this.fox.isHidden()) {
           const durationRemaining = Math.ceil(this.fox.getHideDurationRemaining());
-          this.foxAbilityText.text = `Hide: Active (${durationRemaining}s)`;
+          this.foxAbilityText.text = `HIDING: ${durationRemaining}s left`;
           if (this.foxAbilityText.style.fill !== undefined) {
             this.foxAbilityText.style.fill = 0x00FF00; // Green when active
           }
         } else {
           const cooldownRemaining = Math.ceil(this.fox.getHideCooldownRemaining());
           if (cooldownRemaining > 0) {
-            this.foxAbilityText.text = `Hide: Cooldown (${cooldownRemaining}s)`;
+            this.foxAbilityText.text = `HIDE COOLDOWN: ${cooldownRemaining}s`;
             if (this.foxAbilityText.style.fill !== undefined) {
-              this.foxAbilityText.style.fill = 0xFF9900; // Orange while on cooldown
+              this.foxAbilityText.style.fill = 0xFF0000; // Red while on cooldown
             }
           } else {
-            this.foxAbilityText.text = `Hide: Ready`;
+            this.foxAbilityText.text = `HIDE: READY! [SPACE]`;
             if (this.foxAbilityText.style.fill !== undefined) {
-              this.foxAbilityText.style.fill = 0xFFFFFF; // White when ready
+              this.foxAbilityText.style.fill = 0x00FF00; // Green when ready
             }
           }
         }
@@ -536,7 +541,7 @@ export class World {
     
     // Reposition fox ability text
     if (this.foxAbilityText) {
-      this.foxAbilityText.position.set(20, 60);
+      this.foxAbilityText.position.set(width / 2 - 80, 20); // Center top position for better visibility
     }
   }
   
