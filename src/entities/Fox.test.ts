@@ -69,16 +69,13 @@ describe('Fox', () => {
     expect(fox.position.y).toBe(initialPosition.y);
   });
   
-  test('toggleHiding should switch hiding state', () => {
+  test('tryHide should set hiding state when cooldown is ready', () => {
     expect(fox.isHidden()).toBe(false);
     
-    fox.toggleHiding();
+    // The fox should be able to hide immediately after creation
+    fox.tryHide();
     
     expect(fox.isHidden()).toBe(true);
-    
-    fox.toggleHiding();
-    
-    expect(fox.isHidden()).toBe(false);
   });
   
   test('collectFood should increment food counter', () => {
@@ -117,7 +114,7 @@ describe('Fox', () => {
   });
   
   test('getCaught should not deactivate fox when hiding', () => {
-    fox.toggleHiding();
+    fox.tryHide();
     fox.getCaught();
     
     expect(fox.isActive).toBe(true);
@@ -127,8 +124,83 @@ describe('Fox', () => {
     fox.update(0.16, mockInputManager, 'player1');
     expect(fox.sprite.alpha).toBe(1);
     
-    fox.toggleHiding();
+    fox.tryHide();
     fox.update(0.16, mockInputManager, 'player1');
     expect(fox.sprite.alpha).toBe(0.5);
+  });
+  
+  test('fox should automatically stop hiding after duration expires', () => {
+    fox.tryHide();
+    expect(fox.isHidden()).toBe(true);
+    
+    // Update for slightly less than the hiding duration
+    fox.update(1.9, mockInputManager, 'player1');
+    expect(fox.isHidden()).toBe(true);
+    
+    // Update for the remaining time to exceed the hiding duration
+    fox.update(0.2, mockInputManager, 'player1');
+    expect(fox.isHidden()).toBe(false);
+  });
+  
+  test('fox should not be able to hide during cooldown period', () => {
+    // First hide
+    fox.tryHide();
+    expect(fox.isHidden()).toBe(true);
+    
+    // Wait for hiding duration to expire
+    fox.update(2.1, mockInputManager, 'player1');
+    expect(fox.isHidden()).toBe(false);
+    
+    // Try to hide again immediately - should fail due to cooldown
+    fox.tryHide();
+    expect(fox.isHidden()).toBe(false);
+    
+    // Simulate waiting for part of the cooldown
+    fox.update(5.0, mockInputManager, 'player1');
+    fox.tryHide();
+    expect(fox.isHidden()).toBe(false);
+    
+    // Simulate waiting for the rest of the cooldown
+    fox.update(5.1, mockInputManager, 'player1');
+    fox.tryHide();
+    expect(fox.isHidden()).toBe(true);
+  });
+  
+  test('getHideCooldownRemaining should return correct cooldown time', () => {
+    // Initially cooldown should be 0 (ready to hide)
+    expect(fox.getHideCooldownRemaining()).toBe(0);
+    
+    // Hide the fox
+    fox.tryHide();
+    
+    // During hiding, cooldown remaining should be 0
+    expect(fox.getHideCooldownRemaining()).toBe(0);
+    
+    // Wait for hiding to expire
+    fox.update(2.1, mockInputManager, 'player1');
+    
+    // After hiding, cooldown should be close to 10 seconds (within 3 seconds margin)
+    expect(fox.getHideCooldownRemaining()).toBeGreaterThan(7);
+    
+    // After some time passes, cooldown should decrease
+    fox.update(4.0, mockInputManager, 'player1');
+    expect(fox.getHideCooldownRemaining()).toBeLessThan(7);
+  });
+  
+  test('resetHidingState should reset all hiding-related properties', () => {
+    // First hide
+    fox.tryHide();
+    expect(fox.isHidden()).toBe(true);
+    
+    // Reset hiding state
+    fox.resetHidingState();
+    
+    // Fox should not be hidden and should be able to hide immediately
+    expect(fox.isHidden()).toBe(false);
+    expect(fox.getHideCooldownRemaining()).toBe(0);
+    
+    // Should be able to hide again immediately
+    fox.tryHide();
+    expect(fox.isHidden()).toBe(true);
   });
 });

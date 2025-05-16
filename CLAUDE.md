@@ -66,3 +66,6 @@ npm run lint
 - Each class has corresponding test file
 - Tests focus on individual component behavior
 - TTD write and run tests as you code
+
+## Development Principles
+- Always follow TDD, changes must be tested and you must run tests

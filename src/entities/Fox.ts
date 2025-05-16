@@ -9,12 +9,35 @@ export class Fox extends Entity {
   private isHiding: boolean = false;
   private isCaught: boolean = false;
   
+  // Hiding mechanics
+  private hidingCooldown: number = 10; // Seconds before fox can hide again
+  private hidingDuration: number = 2; // Seconds fox stays hidden
+  private timeSinceLastHide: number = this.hidingCooldown; // Start with ability to hide
+  private hideTimeRemaining: number = 0; // Countdown for current hiding
+  
   constructor(position: Vector2, texture: PIXI.Texture) {
     super(position, texture, 'fox', 30, 30);
+    
+    // Ensure fox is not hidden at start of game
+    this.isHiding = false;
+    this.timeSinceLastHide = this.hidingCooldown; // Start with ability to hide
+    this.hideTimeRemaining = 0;
   }
   
   public override update(deltaTime: number, inputManager?: InputManager, playerType?: string): void {
     if (!this.isActive || this.isCaught) return;
+    
+    // Update hiding timers
+    this.timeSinceLastHide += deltaTime;
+    
+    // If fox is currently hiding, count down the duration
+    if (this.isHiding) {
+      this.hideTimeRemaining -= deltaTime;
+      if (this.hideTimeRemaining <= 0) {
+        this.isHiding = false;
+        this.hideTimeRemaining = 0;
+      }
+    }
     
     if (inputManager && playerType) {
       const direction = inputManager.getDirectionVector(playerType as any);
@@ -23,9 +46,9 @@ export class Fox extends Entity {
       this.velocity.x = direction.x * this.speed;
       this.velocity.y = direction.y * this.speed;
       
-      // Toggle hiding with action button
+      // Try to hide with action button, if cooldown allows
       if (inputManager.isActionPressed(playerType as any)) {
-        this.toggleHiding();
+        this.tryHide();
       }
     }
     
@@ -39,9 +62,13 @@ export class Fox extends Entity {
     }
   }
   
-  public toggleHiding(): void {
-    // Only toggle if not recently toggled (prevent rapid toggling)
-    this.isHiding = !this.isHiding;
+  public tryHide(): void {
+    // Only allow hiding if cooldown has elapsed and not already hiding
+    if (this.timeSinceLastHide >= this.hidingCooldown && !this.isHiding) {
+      this.isHiding = true;
+      this.hideTimeRemaining = this.hidingDuration;
+      this.timeSinceLastHide = 0;
+    }
   }
   
   public collectFood(): void {
@@ -69,5 +96,24 @@ export class Fox extends Entity {
   
   public isHidden(): boolean {
     return this.isHiding;
+  }
+  
+  // For debugging and UI
+  public getHideCooldownRemaining(): number {
+    if (this.isHiding) {
+      return 0; // Can't hide while already hiding
+    }
+    return Math.max(0, this.hidingCooldown - this.timeSinceLastHide);
+  }
+  
+  public getHideDurationRemaining(): number {
+    return this.hideTimeRemaining;
+  }
+  
+  public resetHidingState(): void {
+    // Reset hiding state (used when game restarts)
+    this.isHiding = false;
+    this.timeSinceLastHide = this.hidingCooldown; // Start with ability to hide
+    this.hideTimeRemaining = 0;
   }
 }

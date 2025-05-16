@@ -25,10 +25,20 @@ export class InputManager {
   
   private handleKeyDown(event: KeyboardEvent): void {
     this.keys[event.key] = true;
+    
+    // Fix for Space key detection
+    if (event.key === ' ') {
+      this.keys['Space'] = true;
+    }
   }
   
   private handleKeyUp(event: KeyboardEvent): void {
     this.keys[event.key] = false;
+    
+    // Fix for Space key detection
+    if (event.key === ' ') {
+      this.keys['Space'] = false;
+    }
   }
   
   public isKeyPressed(key: string): boolean {

@@ -10,6 +10,7 @@ import { MapConfig } from '../config/MapConfig';
 import { Entity } from '../entities/Entity';
 import { CollisionSystem } from '../systems/CollisionSystem';
 import { Vector2 } from '../utils/Vector2';
+import { GameState, GameStateType } from './GameState';
 
 export class World {
   private container: PIXI.Container;
@@ -22,6 +23,8 @@ export class World {
   private collisionSystem: CollisionSystem;
   private mapConfig: MapConfig;
   private assetManager: AssetManager;
+  private gameState: GameState | null = null;
+  private scoreText: PIXI.Text | null = null;
   
   constructor(
     stage: PIXI.Container,
@@ -34,6 +37,38 @@ export class World {
     this.assetManager = assetManager;
     this.mapConfig = mapConfig;
     this.collisionSystem = new CollisionSystem();
+    
+    // Create game state manager
+    this.gameState = new GameState(stage);
+    
+    // Create UI elements
+    this.createUI();
+  }
+  
+  private foxAbilityText: PIXI.Text | null = null;
+  
+  private createUI(): void {
+    // Score display
+    this.scoreText = new PIXI.Text('Score: 0', {
+      fontFamily: 'Arial',
+      fontSize: 24,
+      fill: 0xFFFFFF,
+      stroke: 0x000000,
+      strokeThickness: 3
+    });
+    this.scoreText.position.set(20, 20);
+    this.container.addChild(this.scoreText);
+    
+    // Fox ability cooldown display
+    this.foxAbilityText = new PIXI.Text('Hide: Ready', {
+      fontFamily: 'Arial',
+      fontSize: 20,
+      fill: 0xFFFFFF,
+      stroke: 0x000000,
+      strokeThickness: 2
+    });
+    this.foxAbilityText.position.set(20, 60);
+    this.container.addChild(this.foxAbilityText);
   }
   
   public init(): void {
@@ -135,39 +170,100 @@ export class World {
   
   private createHunters(): void {
     for (let i = 0; i < this.mapConfig.hunterCount; i++) {
-      let position: Vector2;
-      let isValidPosition = false;
+      this.spawnHunter();
+    }
+  }
+  
+  /**
+   * Spawns a single hunter at a random valid position
+   */
+  public spawnHunter(): Hunter | null {
+    if (!this.fox || !this.dragon) return null;
+    
+    let position: Vector2 = new Vector2(0, 0); // Initialize with a default
+    let isValidPosition = false;
+    let attempts = 0;
+    const maxAttempts = 50; // Prevent infinite loops
+    
+    // Place hunters away from the fox and dragon
+    while (!isValidPosition && attempts < maxAttempts) {
+      attempts++;
       
-      // Place hunters away from the fox and dragon at the start
-      while (!isValidPosition) {
+      // Generate position near the edge of the map for more challenge
+      const useEdgeSpawn = Math.random() < 0.7; // 70% chance for edge spawn
+      
+      if (useEdgeSpawn) {
+        // Choose a random edge (0: top, 1: right, 2: bottom, 3: left)
+        const edge = Math.floor(Math.random() * 4);
+        
+        switch (edge) {
+          case 0: // Top edge
+            position = new Vector2(
+              Math.random() * this.mapConfig.width,
+              Math.random() * 100
+            );
+            break;
+          case 1: // Right edge
+            position = new Vector2(
+              this.mapConfig.width - Math.random() * 100,
+              Math.random() * this.mapConfig.height
+            );
+            break;
+          case 2: // Bottom edge
+            position = new Vector2(
+              Math.random() * this.mapConfig.width,
+              this.mapConfig.height - Math.random() * 100
+            );
+            break;
+          case 3: // Left edge
+            position = new Vector2(
+              Math.random() * 100,
+              Math.random() * this.mapConfig.height
+            );
+            break;
+          default:
+            position = new Vector2(0, 0); // Fallback
+        }
+      } else {
+        // Random position anywhere on the map
         position = new Vector2(
           Math.random() * this.mapConfig.width,
           Math.random() * this.mapConfig.height
         );
-        
-        const distanceToFox = Vector2.distance(position, this.fox!.position);
-        const distanceToDragon = Vector2.distance(position, this.dragon!.position);
-        
-        isValidPosition = distanceToFox > 300 && distanceToDragon > 300 &&
-          !this.obstacles.some(obstacle => 
-            this.collisionSystem.checkCollision(
-              position.x, position.y, 30, 30,
-              obstacle.position.x, obstacle.position.y, 
-              obstacle.width, obstacle.height
-            )
-          );
-        
-        if (isValidPosition) {
-          const hunter = new Hunter(
-            position,
-            this.assetManager.getTexture('hunter.png')
-          );
-          
-          this.hunters.push(hunter);
-          this.addEntity(hunter);
-        }
       }
+      
+      const distanceToFox = Vector2.distance(position, this.fox.position);
+      const distanceToDragon = Vector2.distance(position, this.dragon.position);
+      
+      // Minimum spawn distance decreases as game progresses, making it harder
+      const minDistance = Math.max(200, 300 - (this.gameState?.getDifficulty() || 1) * 20);
+      
+      isValidPosition = distanceToFox > minDistance && distanceToDragon > minDistance &&
+        !this.obstacles.some(obstacle => 
+          this.collisionSystem.checkCollision(
+            position.x, position.y, 30, 30,
+            obstacle.position.x, obstacle.position.y, 
+            obstacle.width, obstacle.height
+          )
+        );
     }
+    
+    if (isValidPosition) {
+      const hunter = new Hunter(
+        position,
+        this.assetManager.getTexture('hunter.png')
+      );
+      
+      // Make hunters faster as difficulty increases
+      const difficulty = this.gameState?.getDifficulty() || 1;
+      hunter.setSpeedMultiplier(1 + (difficulty - 1) * 0.2); // Increase speed by up to 20% per difficulty level
+      
+      this.hunters.push(hunter);
+      this.addEntity(hunter);
+      return hunter;
+    }
+    
+    return null;
   }
   
   private addEntity(entity: Entity): void {
@@ -176,23 +272,76 @@ export class World {
   }
   
   public update(deltaTime: number, inputManager: InputManager): void {
+    if (!this.gameState) return;
+    
+    // Update the game state
+    this.gameState.update(deltaTime);
+    
+    // Handle game state transitions
+    if (this.gameState.getState() === GameStateType.START_SCREEN) {
+      // Start the game when Space is pressed on the start screen
+      const spacePressed = inputManager.isKeyPressed('Space');
+      if (spacePressed) {
+        console.log("Space pressed on start screen, starting game");
+        this.gameState.setState(GameStateType.PLAYING);
+      }
+      return; // Don't update the game world while on start screen
+    } else if (this.gameState.getState() === GameStateType.GAME_OVER) {
+      // Restart the game when Space is pressed on game over screen
+      const spacePressed = inputManager.isKeyPressed('Space');
+      if (spacePressed) {
+        console.log("Space pressed on game over screen, restarting game");
+        this.resetGame();
+        this.gameState.setState(GameStateType.PLAYING);
+      }
+      return; // Don't update the game world while on game over screen
+    }
+    
+    // Check for respawning hunters
+    if (this.gameState.shouldSpawnHunter()) {
+      this.spawnHunter();
+    }
+    
     // Update fox based on player 1 input
     if (this.fox) {
       this.fox.update(deltaTime, inputManager, 'player1');
+      
+      // Update score based on food collected
+      if (this.scoreText) {
+        this.scoreText.text = `Score: ${this.gameState.getScore()}`;
+      }
+      
+      // Update fox ability cooldown UI
+      if (this.foxAbilityText && this.foxAbilityText.style) {
+        if (this.fox.isHidden()) {
+          const durationRemaining = Math.ceil(this.fox.getHideDurationRemaining());
+          this.foxAbilityText.text = `Hide: Active (${durationRemaining}s)`;
+          if (this.foxAbilityText.style.fill !== undefined) {
+            this.foxAbilityText.style.fill = 0x00FF00; // Green when active
+          }
+        } else {
+          const cooldownRemaining = Math.ceil(this.fox.getHideCooldownRemaining());
+          if (cooldownRemaining > 0) {
+            this.foxAbilityText.text = `Hide: Cooldown (${cooldownRemaining}s)`;
+            if (this.foxAbilityText.style.fill !== undefined) {
+              this.foxAbilityText.style.fill = 0xFF9900; // Orange while on cooldown
+            }
+          } else {
+            this.foxAbilityText.text = `Hide: Ready`;
+            if (this.foxAbilityText.style.fill !== undefined) {
+              this.foxAbilityText.style.fill = 0xFFFFFF; // White when ready
+            }
+          }
+        }
+      }
     }
     
     // Update dragon based on player 2 input
     if (this.dragon) {
       this.dragon.update(deltaTime, inputManager, 'player2');
       
-      // Handle dragon shooting fireballs
-      // Use Space for regular fireballs
-      if (inputManager.isKeyPressed('Space') && this.dragon.canShoot()) {
-        this.createFireball();
-      }
-      
-      // Use 'f' key to shoot at the closest hunter
-      if (inputManager.isKeyPressed('f') && this.dragon.canShoot()) {
+      // Use only 'f' key to shoot at the closest hunter
+      if (inputManager.isKeyPressed('f') && this.dragon.canShoot() && this.gameState.getState() === GameStateType.PLAYING) {
         this.createFireballAtClosestHunter();
       }
     }
@@ -214,8 +363,45 @@ export class World {
     // Handle collisions
     this.handleCollisions();
     
-    // Clean up inactive entities
+    // Clean up inactive entities (but keep track of removed hunters)
+    const previousHunterCount = this.hunters.length;
+    this.hunters = this.hunters.filter(hunter => hunter.isActive);
+    const removedHunterCount = previousHunterCount - this.hunters.length;
+    
+    // Award points for defeating hunters
+    if (removedHunterCount > 0 && this.gameState) {
+      this.gameState.increaseScore(removedHunterCount * 10);
+    }
+    
+    // Clean up all inactive entities
     this.entities = this.entities.filter(entity => entity.isActive);
+    
+    // Check if fox is caught (game over)
+    if (this.fox && !this.fox.isActive && this.gameState.getState() === GameStateType.PLAYING) {
+      this.gameState.setState(GameStateType.GAME_OVER);
+    }
+  }
+  
+  /**
+   * Reset the game to its initial state
+   */
+  private resetGame(): void {
+    // Clear existing entities
+    this.entities.forEach(entity => {
+      entity.destroy();
+    });
+    this.entities = [];
+    this.hunters = [];
+    this.foods = [];
+    this.obstacles = [];
+    this.fox = null;
+    this.dragon = null;
+    
+    // Reinitialize the game
+    this.init();
+    
+    // Ensure the fox is not hidden at game start
+    // Resetting happens in the Fox constructor now, so no need to call explicitly
   }
   
   private createFireball(): void {
@@ -272,6 +458,11 @@ export class World {
         )) {
           food.collect();
           this.fox!.collectFood();
+          
+          // Increase score when food is collected
+          if (this.gameState) {
+            this.gameState.increaseScore(5);
+          }
         }
       });
       
@@ -333,7 +524,20 @@ export class World {
   }
   
   public resize(width: number, height: number): void {
-    // Adjust view if needed
+    // Resize game state UI
+    if (this.gameState) {
+      this.gameState.resize(width, height);
+    }
+    
+    // Reposition score text
+    if (this.scoreText) {
+      this.scoreText.position.set(20, 20);
+    }
+    
+    // Reposition fox ability text
+    if (this.foxAbilityText) {
+      this.foxAbilityText.position.set(20, 60);
+    }
   }
   
   public destroy(): void {

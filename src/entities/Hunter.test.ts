@@ -263,4 +263,68 @@ describe('Hunter', () => {
     
     expect(hunter.getState()).toBe(HunterState.CHASING);
   });
+  
+  test('setSpeedMultiplier should affect hunter speed', () => {
+    // Store the original patrol speed
+    // @ts-ignore - Access private field
+    const originalPatrolSpeed = hunter['patrolSpeed'];
+    
+    // Force patrol state
+    // @ts-ignore - Set private fields
+    hunter['state'] = HunterState.PATROLLING;
+    hunter['patrolWaitTime'] = 0;
+    // Force a specific patrol point for testing
+    // @ts-ignore
+    hunter['patrolPoints'] = [new Vector2(200, 200)];
+    hunter['currentPatrolIndex'] = 0;
+    
+    // Update with default speed
+    // @ts-ignore - Call private method
+    hunter['updatePatrolling'](0.16);
+    
+    // Store the default velocity
+    const defaultVelocityMagnitude = Math.sqrt(
+      hunter.velocity.x * hunter.velocity.x + 
+      hunter.velocity.y * hunter.velocity.y
+    );
+    
+    // Reset velocity
+    hunter.velocity = new Vector2(0, 0);
+    
+    // Set speed multiplier to 2x
+    hunter.setSpeedMultiplier(2.0);
+    
+    // Update again
+    // @ts-ignore - Call private method
+    hunter['updatePatrolling'](0.16);
+    
+    // Calculate new velocity magnitude
+    const boostedVelocityMagnitude = Math.sqrt(
+      hunter.velocity.x * hunter.velocity.x + 
+      hunter.velocity.y * hunter.velocity.y
+    );
+    
+    // New speed should be approximately 2x the original
+    expect(boostedVelocityMagnitude).toBeCloseTo(defaultVelocityMagnitude * 2, 1);
+  });
+  
+  test('setSpeedMultiplier should clamp values to valid range', () => {
+    // @ts-ignore - Access private field
+    const initialMultiplier = hunter['speedMultiplier'];
+    
+    // Test too low value (should clamp to 0.5)
+    hunter.setSpeedMultiplier(0.1);
+    // @ts-ignore - Access private field
+    expect(hunter['speedMultiplier']).toBe(0.5);
+    
+    // Test too high value (should clamp to 2.5)
+    hunter.setSpeedMultiplier(5.0);
+    // @ts-ignore - Access private field
+    expect(hunter['speedMultiplier']).toBe(2.5);
+    
+    // Test normal value
+    hunter.setSpeedMultiplier(1.5);
+    // @ts-ignore - Access private field
+    expect(hunter['speedMultiplier']).toBe(1.5);
+  });
 });

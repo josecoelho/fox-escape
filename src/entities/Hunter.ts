@@ -27,6 +27,7 @@ export class Hunter extends Entity {
   private stunTime: number = 0;
   private maxStunTime: number = 3; // seconds
   private health: number = 2;
+  private speedMultiplier: number = 1.0; // For difficulty scaling
   
   constructor(position: Vector2, texture: PIXI.Texture) {
     super(position, texture, 'hunter', 30, 30);
@@ -102,7 +103,8 @@ export class Hunter extends Entity {
     } else {
       // Move towards patrol point
       const direction = Vector2.subtract(currentTarget, this.position).normalize();
-      this.velocity = direction.scale(this.patrolSpeed);
+      // Apply speed multiplier for difficulty scaling
+      this.velocity = direction.scale(this.patrolSpeed * this.speedMultiplier);
     }
   }
   
@@ -126,7 +128,15 @@ export class Hunter extends Entity {
     
     // Move towards fox
     const direction = Vector2.subtract(this.targetFox.position, this.position).normalize();
-    this.velocity = direction.scale(this.chaseSpeed);
+    // Apply speed multiplier for difficulty scaling
+    this.velocity = direction.scale(this.chaseSpeed * this.speedMultiplier);
+  }
+  
+  /**
+   * Sets the speed multiplier for this hunter (for difficulty scaling)
+   */
+  public setSpeedMultiplier(multiplier: number): void {
+    this.speedMultiplier = Math.max(0.5, Math.min(multiplier, 2.5)); // Clamp between 0.5x and 2.5x speed
   }
   
   public canSee(fox: Fox, obstacles: Obstacle[]): boolean {
