@@ -13,8 +13,15 @@ export class Fireball extends Entity {
     // Set velocity based on direction
     this.velocity = direction.scale(this.speed);
     
+    // Make fireball more visible
+    this.sprite.scale.set(1.5, 1.5);
+    this.sprite.tint = 0xFF5500; // Bright orange color
+    
     // Add a glow effect
     this.sprite.filters = [this.createGlowFilter()];
+    
+    // Debug output
+    console.log("Fireball created at position", position.x, position.y);
   }
   
   private createGlowFilter(): PIXI.Filter {

@@ -46,13 +46,27 @@ export class Dragon extends Entity {
     this.timeSinceLastFireball = 0;
     
     // Create a new fireball starting at dragon's position
-    const fireball = new Fireball(
-      this.position.copy(),
-      PIXI.Texture.from('fireball.png'),
-      this.getShootingDirection()
-    );
-    
-    return fireball;
+    try {
+      // Create a simple graphic for the fireball in case texture loading fails
+      const fireballGraphics = new PIXI.Graphics();
+      fireballGraphics.beginFill(0xFF0000);  // Red color
+      fireballGraphics.drawCircle(0, 0, 10); // Circle with radius 10
+      fireballGraphics.endFill();
+      
+      const fireballTexture = PIXI.Texture.from(fireballGraphics);
+      
+      const fireball = new Fireball(
+        this.position.copy(),
+        fireballTexture,
+        this.getShootingDirection()
+      );
+      
+      console.log("Dragon shot a fireball in direction:", this.getShootingDirection());
+      return fireball;
+    } catch (error) {
+      console.error("Error creating fireball:", error);
+      return null;
+    }
   }
   
   /**
@@ -65,17 +79,31 @@ export class Dragon extends Entity {
     
     this.timeSinceLastFireball = 0;
     
-    // Calculate direction to target
-    const direction = Vector2.subtract(targetPosition, this.position).normalize();
-    
-    // Create a new fireball starting at dragon's position
-    const fireball = new Fireball(
-      this.position.copy(),
-      PIXI.Texture.from('fireball.png'),
-      direction
-    );
-    
-    return fireball;
+    try {
+      // Create a simple graphic for the fireball in case texture loading fails
+      const fireballGraphics = new PIXI.Graphics();
+      fireballGraphics.beginFill(0xFF0000);  // Red color
+      fireballGraphics.drawCircle(0, 0, 10); // Circle with radius 10
+      fireballGraphics.endFill();
+      
+      const fireballTexture = PIXI.Texture.from(fireballGraphics);
+      
+      // Calculate direction to target
+      const direction = Vector2.subtract(targetPosition, this.position).normalize();
+      
+      // Create a new fireball starting at dragon's position
+      const fireball = new Fireball(
+        this.position.copy(),
+        fireballTexture,
+        direction
+      );
+      
+      console.log("Dragon shot a fireball at target:", targetPosition.x, targetPosition.y);
+      return fireball;
+    } catch (error) {
+      console.error("Error creating fireball:", error);
+      return null;
+    }
   }
   
   private getShootingDirection(): Vector2 {
