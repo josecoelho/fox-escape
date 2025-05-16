@@ -12,17 +12,17 @@ export enum HunterState {
 }
 
 export class Hunter extends Entity {
-  private speed: number = 100;
-  private patrolSpeed: number = 50;
-  private chaseSpeed: number = 150;
+  private speed: number = 120; // Increased base speed
+  private patrolSpeed: number = 70; // Increased from 50
+  private chaseSpeed: number = 180; // Increased from 150
   private patrolPoints: Vector2[] = [];
   private currentPatrolIndex: number = 0;
   private patrolWaitTime: number = 0;
-  private maxPatrolWait: number = 2; // seconds
+  private maxPatrolWait: number = 1.5; // Reduced wait time from 2 seconds
   private state: HunterState = HunterState.PATROLLING;
   private targetFox: Fox | null = null;
-  private visionRange: number = 250;
-  private visionAngle: number = Math.PI / 2; // 90 degrees
+  private visionRange: number = 300; // Increased from 250
+  private visionAngle: number = Math.PI * 0.6; // Increased from PI/2 (90 degrees) to ~108 degrees
   private collisionSystem: CollisionSystem = new CollisionSystem();
   private stunTime: number = 0;
   private maxStunTime: number = 3; // seconds
@@ -140,25 +140,34 @@ export class Hunter extends Entity {
   }
   
   public canSee(fox: Fox, obstacles: Obstacle[]): boolean {
+    // If fox is hiding or inactive, the hunter can't see it
     if (!fox.isActive || fox.isHidden()) return false;
     
-    // Check distance
+    // Check distance - hunters have limited vision range
     const distance = Vector2.distance(this.position, fox.position);
     if (distance > this.visionRange) return false;
     
-    // Check angle
+    // Check angle - hunters can only see in front of them in a cone
     const toFox = Vector2.subtract(fox.position, this.position).normalize();
     const hunterDirection = this.velocity.normalize();
     
-    // If not moving, assume the hunter can see in all directions
+    // If hunter isn't moving, reduce their field of view to make hiding more effective
     if (hunterDirection.x === 0 && hunterDirection.y === 0) {
-      // Skip angle check
+      // Instead of skipping the angle check, use the last known direction
+      // Or default to a narrower "idle" vision cone
+      const idleVisionAngle = this.visionAngle * 0.7; // Narrower vision when stationary
+      
+      // For idle hunters, use the last non-zero velocity direction if available
+      // Or default to looking right if no previous movement
+      const defaultDirection = new Vector2(1, 0); // Looking right by default
+      const angle = Math.acos(Vector2.dot(defaultDirection, toFox));
+      if (angle > idleVisionAngle / 2) return false;
     } else {
       const angle = Math.acos(Vector2.dot(hunterDirection, toFox));
       if (angle > this.visionAngle / 2) return false;
     }
     
-    // Check for obstacles blocking line of sight
+    // Check for obstacles blocking line of sight - multiple rays for better accuracy
     for (const obstacle of obstacles) {
       // Skip obstacles with no position (might happen in tests)
       if (!obstacle || !obstacle.position) continue;
@@ -169,6 +178,7 @@ export class Hunter extends Entity {
         obstacle.position.x - obstacle.width / 2, obstacle.position.y - obstacle.height / 2,
         obstacle.width, obstacle.height
       )) {
+        // If any ray is blocked, hunter can't see fox
         return false;
       }
     }

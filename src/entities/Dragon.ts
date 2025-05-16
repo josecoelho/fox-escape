@@ -10,8 +10,18 @@ export class Dragon extends Entity {
   private fireballCooldown: number = 0.5; // in seconds
   private timeSinceLastFireball: number = this.fireballCooldown;
   
+  // Store map boundaries to prevent dragon from leaving the playable area
+  private mapWidth: number = 0;
+  private mapHeight: number = 0;
+  
   constructor(position: Vector2, texture: PIXI.Texture) {
     super(position, texture, 'dragon', 40, 40);
+  }
+  
+  // Set map boundaries
+  public setMapBoundaries(width: number, height: number): void {
+    this.mapWidth = width;
+    this.mapHeight = height;
   }
   
   public override update(deltaTime: number, inputManager?: InputManager, playerType?: string): void {
@@ -29,6 +39,41 @@ export class Dragon extends Entity {
     }
     
     super.update(deltaTime);
+    
+    // Keep dragon within map boundaries (if boundaries have been set)
+    if (this.mapWidth > 0 && this.mapHeight > 0) {
+      // Calculate dragon's edges accounting for its dimensions
+      const halfWidth = this.width / 2;
+      const halfHeight = this.height / 2;
+      
+      // Create padding to ensure dragon doesn't partially go out of bounds
+      const padding = 5;
+      
+      // Check horizontal boundaries
+      if (this.position.x - halfWidth < padding) {
+        // Hitting left boundary
+        this.position.x = halfWidth + padding;
+        this.velocity.x = 0;
+      } else if (this.position.x + halfWidth > this.mapWidth - padding) {
+        // Hitting right boundary
+        this.position.x = this.mapWidth - halfWidth - padding;
+        this.velocity.x = 0;
+      }
+      
+      // Check vertical boundaries
+      if (this.position.y - halfHeight < padding) {
+        // Hitting top boundary
+        this.position.y = halfHeight + padding;
+        this.velocity.y = 0;
+      } else if (this.position.y + halfHeight > this.mapHeight - padding) {
+        // Hitting bottom boundary
+        this.position.y = this.mapHeight - halfHeight - padding;
+        this.velocity.y = 0;
+      }
+      
+      // Update sprite position if we had to adjust for boundaries
+      this.sprite.position.set(this.position.x, this.position.y);
+    }
   }
   
   public canShoot(): boolean {

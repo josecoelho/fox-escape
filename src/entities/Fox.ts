@@ -24,6 +24,16 @@ export class Fox extends Entity {
     this.hideTimeRemaining = 0;
   }
   
+  // Store map boundaries to prevent fox from leaving the playable area
+  private mapWidth: number = 0;
+  private mapHeight: number = 0;
+  
+  // Set map boundaries
+  public setMapBoundaries(width: number, height: number): void {
+    this.mapWidth = width;
+    this.mapHeight = height;
+  }
+  
   public override update(deltaTime: number, inputManager?: InputManager, playerType?: string): void {
     if (!this.isActive || this.isCaught) return;
     
@@ -52,13 +62,53 @@ export class Fox extends Entity {
       }
     }
     
+    // Save position before update to use for boundary checking
+    const prevPosition = this.position.copy();
+    
     super.update(deltaTime);
     
     // Update visual based on hiding state
     if (this.isHiding) {
-      this.sprite.alpha = 0.5;
+      // Use a higher alpha (0.7) so fox is still visible to the player
+      // but hunters can't see it (in game logic)
+      this.sprite.alpha = 0.7;
     } else {
       this.sprite.alpha = 1;
+    }
+    
+    // Keep fox within map boundaries (if boundaries have been set)
+    if (this.mapWidth > 0 && this.mapHeight > 0) {
+      // Calculate fox's edges accounting for its dimensions
+      const halfWidth = this.width / 2;
+      const halfHeight = this.height / 2;
+      
+      // Create padding to ensure fox doesn't partially go out of bounds
+      const padding = 5;
+      
+      // Check horizontal boundaries
+      if (this.position.x - halfWidth < padding) {
+        // Hitting left boundary
+        this.position.x = halfWidth + padding;
+        this.velocity.x = 0;
+      } else if (this.position.x + halfWidth > this.mapWidth - padding) {
+        // Hitting right boundary
+        this.position.x = this.mapWidth - halfWidth - padding;
+        this.velocity.x = 0;
+      }
+      
+      // Check vertical boundaries
+      if (this.position.y - halfHeight < padding) {
+        // Hitting top boundary
+        this.position.y = halfHeight + padding;
+        this.velocity.y = 0;
+      } else if (this.position.y + halfHeight > this.mapHeight - padding) {
+        // Hitting bottom boundary
+        this.position.y = this.mapHeight - halfHeight - padding;
+        this.velocity.y = 0;
+      }
+      
+      // Update sprite position if we had to adjust for boundaries
+      this.sprite.position.set(this.position.x, this.position.y);
     }
   }
   

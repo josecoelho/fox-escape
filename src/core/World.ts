@@ -252,6 +252,10 @@ export class World {
       new Vector2(this.mapConfig.width / 2, this.mapConfig.height / 2),
       this.assetManager.getTexture('fox.png')
     );
+    
+    // Set map boundaries to prevent fox from going out of bounds
+    this.fox.setMapBoundaries(this.mapConfig.width, this.mapConfig.height);
+    
     this.addEntity(this.fox);
   }
   
@@ -262,6 +266,10 @@ export class World {
       new Vector2(this.mapConfig.width / 2 + offsetDistance, this.mapConfig.height / 2 + offsetDistance),
       this.assetManager.getTexture('dragon.png')
     );
+    
+    // Set map boundaries to prevent dragon from going out of bounds
+    this.dragon.setMapBoundaries(this.mapConfig.width, this.mapConfig.height);
+    
     this.addEntity(this.dragon);
   }
   
@@ -610,6 +618,19 @@ export class World {
     // First clean up the old status bar
     if (this.statusGraphic && this.statusGraphic.parent) {
       this.statusGraphic.parent.removeChild(this.statusGraphic);
+    }
+    
+    // Update map configuration with new dimensions
+    this.mapConfig.width = width;
+    this.mapConfig.height = height;
+    
+    // Update fox and dragon boundaries to match new map size
+    if (this.fox) {
+      this.fox.setMapBoundaries(width, height);
+    }
+    
+    if (this.dragon) {
+      this.dragon.setMapBoundaries(width, height);
     }
     
     // Recreate the UI for the resized screen
