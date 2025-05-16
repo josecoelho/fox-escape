@@ -26,11 +26,14 @@ export class World {
   private gameState: GameState | null = null;
   private scoreText: PIXI.Text | null = null;
   
+  private stage: PIXI.Container;
+
   constructor(
     stage: PIXI.Container,
     assetManager: AssetManager,
     mapConfig: MapConfig
   ) {
+    this.stage = stage;
     this.container = new PIXI.Container();
     stage.addChild(this.container);
     
@@ -43,11 +46,96 @@ export class World {
     
     // Create UI elements
     this.createUI();
+    
+    // Create a fallback UI directly on the stage (not affected by container changes)
+    this.createDirectUI();
+  }
+  
+  private statusGraphic: PIXI.Graphics | null = null;
+  
+  private createDirectUI(): void {
+    // Remove any previous status graphic
+    if (this.statusGraphic && this.statusGraphic.parent) {
+      this.statusGraphic.parent.removeChild(this.statusGraphic);
+    }
+    
+    // Create a very visible graphic indicator at the top of the screen
+    this.statusGraphic = new PIXI.Graphics();
+    
+    // Create a large colored rectangle at the top
+    this.statusGraphic.beginFill(0x00FF00, 0.7); // Semi-transparent green
+    this.statusGraphic.drawRect(0, 0, this.mapConfig.width, 50);
+    this.statusGraphic.endFill();
+    
+    // Add a text label in the center
+    const hideLabel = new PIXI.Text('HIDE AVAILABLE - PRESS SPACE', {
+      fontFamily: 'Arial',
+      fontSize: 24,
+      fontWeight: 'bold',
+      fill: 0xFFFFFF,
+      stroke: 0x000000,
+      strokeThickness: 4,
+      align: 'center',
+    });
+    
+    hideLabel.anchor.set(0.5);
+    hideLabel.position.set(this.mapConfig.width / 2, 25);
+    this.statusGraphic.addChild(hideLabel);
+    
+    // Add to the stage directly, not the container
+    this.stage.addChild(this.statusGraphic);
+    
+    // Ensure it's always on top
+    this.statusGraphic.zIndex = 9999;
+    this.stage.sortChildren();
+  }
+  
+  // Update the status graphic based on fox hiding state
+  private updateStatusGraphic(): void {
+    if (!this.statusGraphic || !this.fox) return;
+    
+    if (this.fox.isHidden()) {
+      // Fox is hiding - show active state
+      this.statusGraphic.clear();
+      this.statusGraphic.beginFill(0x00FFFF, 0.7); // Cyan
+      this.statusGraphic.drawRect(0, 0, this.mapConfig.width, 50);
+      this.statusGraphic.endFill();
+      
+      const remainingTime = Math.ceil(this.fox.getHideDurationRemaining());
+      const hideLabel = this.statusGraphic.getChildAt(0) as PIXI.Text;
+      hideLabel.text = `HIDING ACTIVE - ${remainingTime}s LEFT`;
+      
+    } else if (this.fox.getHideCooldownRemaining() > 0) {
+      // Fox is on cooldown
+      this.statusGraphic.clear();
+      this.statusGraphic.beginFill(0xFF0000, 0.7); // Red
+      this.statusGraphic.drawRect(0, 0, this.mapConfig.width, 50);
+      this.statusGraphic.endFill();
+      
+      const cooldownTime = Math.ceil(this.fox.getHideCooldownRemaining());
+      const hideLabel = this.statusGraphic.getChildAt(0) as PIXI.Text;
+      hideLabel.text = `HIDING ON COOLDOWN - ${cooldownTime}s`;
+      
+    } else {
+      // Ready to hide
+      this.statusGraphic.clear();
+      this.statusGraphic.beginFill(0x00FF00, 0.7); // Green
+      this.statusGraphic.drawRect(0, 0, this.mapConfig.width, 50);
+      this.statusGraphic.endFill();
+      
+      const hideLabel = this.statusGraphic.getChildAt(0) as PIXI.Text;
+      hideLabel.text = `HIDE AVAILABLE - PRESS SPACE`;
+    }
   }
   
   private foxAbilityText: PIXI.Text | null = null;
   
   private createUI(): void {
+    // Create a separate UI container that stays on top
+    const uiContainer = new PIXI.Container();
+    uiContainer.zIndex = 1000; // Ensure UI is above everything else
+    this.container.addChild(uiContainer);
+    
     // Score display
     this.scoreText = new PIXI.Text('Score: 0', {
       fontFamily: 'Arial',
@@ -57,23 +145,59 @@ export class World {
       strokeThickness: 3
     });
     this.scoreText.position.set(20, 20);
-    this.container.addChild(this.scoreText);
+    uiContainer.addChild(this.scoreText);
     
-    // Fox ability cooldown display
-    this.foxAbilityText = new PIXI.Text('Hide: Ready', {
+    // Fox ability cooldown display - make it VERY prominent
+    this.foxAbilityText = new PIXI.Text('HIDE: READY! [SPACE]', {
       fontFamily: 'Arial',
-      fontSize: 24,
+      fontSize: 28,
       fill: 0x00FF00, // Start with green for "ready"
       stroke: 0x000000,
-      strokeThickness: 3,
+      strokeThickness: 4,
       dropShadow: true,
       dropShadowColor: '#000000',
-      dropShadowBlur: 4,
-      dropShadowDistance: 2
+      dropShadowBlur: 6,
+      dropShadowDistance: 3
     });
-    // Position it in the top center of the screen
-    this.foxAbilityText.position.set(this.mapConfig.width / 2 - 80, 20);
-    this.container.addChild(this.foxAbilityText);
+    
+    // Create background for better visibility
+    const textMetrics = PIXI.TextMetrics.measureText(
+      'HIDE COOLDOWN: 10s', 
+      new PIXI.TextStyle({
+        fontFamily: 'Arial',
+        fontSize: 28
+      })
+    );
+    
+    const padding = 10;
+    const background = new PIXI.Graphics();
+    background.beginFill(0x000000, 0.5);
+    background.drawRect(
+      0, 
+      0, 
+      textMetrics.width + padding * 2, 
+      textMetrics.height + padding * 2
+    );
+    background.endFill();
+    
+    // Group the text and background
+    const hideStatusContainer = new PIXI.Container();
+    hideStatusContainer.addChild(background);
+    hideStatusContainer.addChild(this.foxAbilityText);
+    
+    // Position text within background
+    this.foxAbilityText.position.set(padding, padding);
+    
+    // Position the group at the top center
+    hideStatusContainer.position.set(
+      this.mapConfig.width / 2 - (textMetrics.width + padding * 2) / 2, 
+      20
+    );
+    
+    uiContainer.addChild(hideStatusContainer);
+    
+    // Force container to display above other elements
+    this.container.sortChildren();
   }
   
   public init(): void {
@@ -365,6 +489,11 @@ export class World {
       }
     });
     
+    // Update the status graphic
+    if (this.fox) {
+      this.updateStatusGraphic();
+    }
+    
     // Handle collisions
     this.handleCollisions();
     
@@ -539,10 +668,21 @@ export class World {
       this.scoreText.position.set(20, 20);
     }
     
-    // Reposition fox ability text
-    if (this.foxAbilityText) {
-      this.foxAbilityText.position.set(width / 2 - 80, 20); // Center top position for better visibility
+    // Recreate the UI for the resized screen
+    // First remove all children to avoid duplicates
+    this.container.removeChildren();
+    
+    // Now add the game elements back
+    this.createBackground();
+    
+    // Re-add all entities that were removed
+    for (const entity of this.entities) {
+      this.container.addChild(entity.sprite);
     }
+    
+    // Recreate UI elements
+    this.createUI();
+    this.createDirectUI();
   }
   
   public destroy(): void {
