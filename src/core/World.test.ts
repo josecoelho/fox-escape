@@ -38,8 +38,9 @@ jest.mock('pixi.js', () => {
 
 // Mock entities
 jest.mock('../entities/Fox', () => ({
-  Fox: jest.fn().mockImplementation(() => ({
-    position: new Vector2(0, 0),
+  Fox: jest.fn().mockImplementation((position) => ({
+    // Use the provided position from constructor
+    position: position || new Vector2(0, 0),
     width: 30,
     height: 30,
     sprite: {},
@@ -48,14 +49,16 @@ jest.mock('../entities/Fox', () => ({
     collectFood: jest.fn(),
     handleCollision: jest.fn(),
     getCaught: jest.fn(),
+    isHidden: jest.fn().mockReturnValue(false),
     type: 'fox',
     destroy: jest.fn()
   }))
 }));
 
 jest.mock('../entities/Dragon', () => ({
-  Dragon: jest.fn().mockImplementation(() => ({
-    position: new Vector2(50, 50),
+  Dragon: jest.fn().mockImplementation((position) => ({
+    // Use the provided position from constructor
+    position: position || new Vector2(50, 50),
     width: 40,
     height: 40,
     sprite: {},
@@ -189,6 +192,39 @@ describe('World', () => {
     expect(world['obstacles'].length).toBe(1);
   });
   
+  test('fox and dragon should be positioned relative to map size', () => {
+    // Instead of testing the resulting entity positions directly,
+    // we'll test that the Fox and Dragon constructors are called with correct positions
+    
+    // Reset mocks to track calls
+    (Fox as jest.Mock).mockClear();
+    (Dragon as jest.Mock).mockClear();
+    
+    // Initialize the world to create entities
+    world.init();
+
+    // Verify Fox was called with center position of map
+    expect(Fox).toHaveBeenCalledWith(
+      expect.objectContaining({
+        x: mockMapConfig.width / 2,
+        y: mockMapConfig.height / 2
+      }),
+      expect.anything()
+    );
+    
+    // Calculate the expected offset for dragon
+    const offsetDistance = Math.min(70, Math.min(mockMapConfig.width, mockMapConfig.height) * 0.1);
+    
+    // Verify Dragon was called with offset position
+    expect(Dragon).toHaveBeenCalledWith(
+      expect.objectContaining({
+        x: mockMapConfig.width / 2 + offsetDistance,
+        y: mockMapConfig.height / 2 + offsetDistance
+      }),
+      expect.anything()
+    );
+  });
+  
   test('update should update all entities', () => {
     world.init();
     
@@ -238,16 +274,16 @@ describe('World', () => {
       new (jest.requireMock('../entities/Hunter').Hunter)()
     ];
 
-    // Override positions to ensure the first hunter is closer
+    // Set dragon position
+    // @ts-ignore 
+    world['dragon'].position = new Vector2(50, 50);
+
+    // Override hunter positions to ensure the first hunter is closer
     world['hunters'][0].position = new Vector2(100, 100);
     world['hunters'][1].position = new Vector2(200, 200);
     
     // @ts-ignore - accessing private properties for testing
     const dragonShootAtSpy = jest.spyOn(world['dragon']!, 'shootFireballAt');
-    
-    // Restore actual implementation for the relevant function
-    // @ts-ignore - accessing private method
-    const originalMethod = world['createFireballAtClosestHunter'];
     
     // Spy on console.log
     const consoleLogSpy = jest.spyOn(console, 'log');
@@ -260,7 +296,7 @@ describe('World', () => {
       y: 100
     }));
     
-    // Verify firebal was added to entities
+    // Verify fireball was added to entities
     // @ts-ignore - check if fireball was added
     expect(world['entities'].some(e => e.type === 'fireball')).toBeTruthy();
     

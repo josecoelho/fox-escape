@@ -2,10 +2,14 @@ import { Game } from './core/Game';
 import { defaultGameConfig } from './config/GameConfig';
 import { forestMap } from './config/MapConfig';
 
-// Create game instance
+// Use browser window size for the canvas
+const windowWidth = window.innerWidth;
+const windowHeight = window.innerHeight;
+
+// Create game instance with browser window dimensions
 const game = new Game(
-  defaultGameConfig.canvasWidth,
-  defaultGameConfig.canvasHeight
+  windowWidth,
+  windowHeight
 );
 
 // Initialize and start the game
@@ -13,8 +17,28 @@ async function startGame() {
   // Initialize the game
   await game.init();
   
-  // Load the forest map
-  game.loadMap(forestMap);
+  // Create a copy of the forest map with window dimensions
+  const adaptedMap = { ...forestMap };
+  adaptedMap.width = windowWidth;
+  adaptedMap.height = windowHeight;
+  
+  // Adjust obstacle positions to fit the window size
+  adaptedMap.obstacles = forestMap.obstacles.map((obstacle, index) => {
+    // Calculate new positions proportional to window size
+    const rows = 3;
+    const cols = 4;
+    const row = Math.floor(index / cols);
+    const col = index % cols;
+    
+    return {
+      ...obstacle,
+      x: (col + 0.5) * (windowWidth / cols) + (Math.random() * 100 - 50),
+      y: (row + 0.5) * (windowHeight / rows) + (Math.random() * 100 - 50)
+    };
+  });
+  
+  // Load the adapted map
+  game.loadMap(adaptedMap);
   
   // Handle window resize
   window.addEventListener('resize', handleResize);
@@ -23,7 +47,8 @@ async function startGame() {
   console.log('Fox Escape game started!');
 }
 
-// Resize handler
+// Resize handler - only resize the renderer
+// We don't need to recreate the world since we're setting initial size only
 function handleResize() {
   const width = window.innerWidth;
   const height = window.innerHeight;

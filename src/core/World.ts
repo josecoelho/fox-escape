@@ -115,6 +115,7 @@ export class World {
   }
   
   private createFox(): void {
+    // Position the fox in the center of the visible area
     this.fox = new Fox(
       new Vector2(this.mapConfig.width / 2, this.mapConfig.height / 2),
       this.assetManager.getTexture('fox.png')
@@ -123,8 +124,10 @@ export class World {
   }
   
   private createDragon(): void {
+    // Position the dragon near the fox but offset slightly
+    const offsetDistance = Math.min(70, Math.min(this.mapConfig.width, this.mapConfig.height) * 0.1);
     this.dragon = new Dragon(
-      new Vector2(this.mapConfig.width / 2 + 50, this.mapConfig.height / 2 + 50),
+      new Vector2(this.mapConfig.width / 2 + offsetDistance, this.mapConfig.height / 2 + offsetDistance),
       this.assetManager.getTexture('dragon.png')
     );
     this.addEntity(this.dragon);
