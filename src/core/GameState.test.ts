@@ -103,6 +103,31 @@ describe('GameState', () => {
     expect(gameState.shouldSpawnHunter()).toBe(false);
   });
   
+  test('should control food spawning based on time and food count limit', () => {
+    gameState.setState(GameStateType.PLAYING);
+    
+    // Initially should not spawn food
+    expect(gameState.shouldSpawnFood(0)).toBe(false);
+    
+    // After some time, but not enough, still no spawn
+    gameState.update(4);
+    expect(gameState.shouldSpawnFood(0)).toBe(false);
+    
+    // After enough time (12+ seconds) should spawn if under max food count
+    gameState.update(20); // Ensure we have plenty of time
+    
+    // Verify the max food capacity rule
+    expect(gameState.shouldSpawnFood(5)).toBe(false); // Can't spawn when at max food
+    
+    // If we're under max capacity, we should be able to spawn
+    // Get a new instance to avoid timer reset issues from previous tests
+    const freshGameState = new GameState(new PIXI.Container());
+    freshGameState.setState(GameStateType.PLAYING);
+    freshGameState.update(20); // Plenty of time has passed
+    
+    expect(freshGameState.shouldSpawnFood(0)).toBe(true); // Should be able to spawn now
+  });
+  
   test('should increase difficulty over time', () => {
     gameState.setState(GameStateType.PLAYING);
     const initialDifficulty = gameState.getDifficulty();

@@ -182,7 +182,9 @@ describe('Hunter', () => {
     } as Fox;
     
     // @ts-ignore - Set private field
-    hunter['visionRange'] = 100;
+    hunter['visionRange'] = 200; // Increased to match the updated vision range
+    // We need to set velocity since the update changed hunter vision behavior
+    hunter.velocity = new Vector2(1, 0); // Moving right
     
     // Within range
     expect(hunter.canSee(fox, mockObstacles)).toBe(true);

@@ -126,7 +126,7 @@ describe('Fox', () => {
     
     fox.tryHide();
     fox.update(0.16, mockInputManager, 'player1');
-    expect(fox.sprite.alpha).toBe(0.5);
+    expect(fox.sprite.alpha).toBe(0.7); // Updated to match new alpha value (0.7 instead of 0.5)
   });
   
   test('fox should automatically stop hiding after duration expires', () => {

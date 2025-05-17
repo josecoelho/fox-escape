@@ -3,7 +3,6 @@ import { World } from './World';
 import { AssetManager } from './AssetManager';
 import { MapConfig } from '../config/MapConfig';
 import { GameState, GameStateType } from './GameState';
-import { Vector2 } from '../utils/Vector2';
 import { Hunter } from '../entities/Hunter';
 
 // Mock necessary dependencies
