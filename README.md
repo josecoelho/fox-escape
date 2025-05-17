@@ -4,9 +4,9 @@ A top-view 2D game set in the woods where one player controls a fox hiding from 
 
 ## Play the Game
 
-You can play the game online at: [https://YOUR-USERNAME.github.io/fox-escape](https://YOUR-USERNAME.github.io/fox-escape)
+You can play the game online at: [https://josecoelho.github.io/fox-escape](https://josecoelho.github.io/fox-escape)
 
-*Note: Replace YOUR-USERNAME with your actual GitHub username after deployment.*
+*Note: The game will be available at this URL once deployment is complete.*
 
 ## Game Overview
 

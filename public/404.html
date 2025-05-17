@@ -45,15 +45,15 @@
     }
   </style>
   <script>
-    // Redirect to the root page
-    window.location.href = '/';
+    // Redirect to the root page with relative path for GitHub Pages
+    window.location.href = window.location.pathname.split('/').slice(0, -1).join('/') + '/';
   </script>
 </head>
 <body>
   <div class="container">
     <h1>Page Not Found</h1>
     <p>Oops! The fox seems to have hidden too well this time. We can't find the page you're looking for.</p>
-    <a href="/">Return to Game</a>
+    <a href="./">Return to Game</a>
   </div>
 </body>
 </html>
