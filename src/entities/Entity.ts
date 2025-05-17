@@ -2,7 +2,7 @@ import * as PIXI from 'pixi.js';
 import { Vector2 } from '../utils/Vector2';
 import { InputManager } from '../core/InputManager';
 
-export type EntityType = 'fox' | 'dragon' | 'hunter' | 'food' | 'obstacle' | 'fireball';
+export type EntityType = 'fox' | 'dragon' | 'hunter' | 'food' | 'obstacle' | 'fireball' | 'poo';
 
 export abstract class Entity {
   public position: Vector2;

@@ -8,7 +8,8 @@ import { CollisionSystem } from '../systems/CollisionSystem';
 export enum HunterState {
   PATROLLING,
   CHASING,
-  STUNNED
+  STUNNED,
+  STUCK_IN_POO
 }
 
 export class Hunter extends Entity {
@@ -26,8 +27,13 @@ export class Hunter extends Entity {
   private collisionSystem: CollisionSystem = new CollisionSystem();
   private stunTime: number = 0;
   private maxStunTime: number = 3; // seconds
+  private stuckTime: number = 0;
+  private maxStuckTime: number = 5; // seconds
   private health: number = 2;
   private speedMultiplier: number = 1.0; // For difficulty scaling
+  
+  // Graphics for smell effect when hunter is stuck in poo
+  private smellGraphic: PIXI.Graphics | null = null;
   
   constructor(position: Vector2, texture: PIXI.Texture) {
     super(position, texture, 'hunter', 30, 30);
@@ -57,6 +63,15 @@ export class Hunter extends Entity {
     super.update(deltaTime);
   }
   
+  public override destroy(): void {
+    // Clean up smell graphic if it exists
+    if (this.smellGraphic) {
+      this.smellGraphic.destroy();
+      this.smellGraphic = null;
+    }
+    super.destroy();
+  }
+
   public updateAI(deltaTime: number, fox: Fox, obstacles: Obstacle[]): void {
     if (!this.isActive) return;
     
@@ -67,6 +82,32 @@ export class Hunter extends Entity {
         this.state = HunterState.PATROLLING;
       } else {
         // Don't move while stunned
+        this.velocity = new Vector2(0, 0);
+        return;
+      }
+    }
+    
+    // Update stuck time if stuck in poo
+    if (this.state === HunterState.STUCK_IN_POO) {
+      this.stuckTime -= deltaTime;
+      
+      // Update smell graphic position to follow hunter
+      if (this.smellGraphic) {
+        this.smellGraphic.position.set(this.position.x, this.position.y - 40); // Position above hunter
+      }
+      
+      if (this.stuckTime <= 0) {
+        this.state = HunterState.PATROLLING;
+        
+        // Remove smell graphic when no longer stuck
+        if (this.smellGraphic) {
+          if (this.smellGraphic.parent) {
+            this.smellGraphic.parent.removeChild(this.smellGraphic);
+          }
+          this.smellGraphic = null;
+        }
+      } else {
+        // Don't move while stuck in poo
         this.velocity = new Vector2(0, 0);
         return;
       }
@@ -211,7 +252,101 @@ export class Hunter extends Entity {
     }
   }
   
+  /**
+   * Makes the hunter step in poo and get stuck
+   * @param container The PIXI container to add the smell graphic to
+   */
+  public stepInPoo(container: PIXI.Container): void {
+    // Only get stuck if not already stuck or stunned
+    if (this.state !== HunterState.STUCK_IN_POO && this.state !== HunterState.STUNNED) {
+      this.state = HunterState.STUCK_IN_POO;
+      this.stuckTime = this.maxStuckTime;
+      this.velocity = new Vector2(0, 0);
+      
+      // Create smell graphic effect
+      this.createSmellGraphic(container);
+    }
+  }
+  
+  /**
+   * Creates a visual smell effect above the hunter
+   */
+  private createSmellGraphic(container: PIXI.Container): void {
+    // Remove any existing smell graphic
+    if (this.smellGraphic && this.smellGraphic.parent) {
+      this.smellGraphic.parent.removeChild(this.smellGraphic);
+    }
+    
+    // Create a new graphic for the smell
+    this.smellGraphic = new PIXI.Graphics();
+    
+    // Position above the hunter
+    this.smellGraphic.position.set(this.position.x, this.position.y - 40);
+    
+    // Draw the smell effect - a combination of poo emoji and stink lines
+    
+    // First draw the stink lines in green
+    this.smellGraphic.lineStyle(2, 0x00AA00, 0.8);
+    
+    // Draw multiple wavy lines (stink lines)
+    for (let i = 0; i < 5; i++) {
+      const startX = -15 + i * 8;
+      const waveHeight = 5 + Math.random() * 5;
+      const waveCount = 2 + Math.floor(Math.random() * 2);
+      
+      this.smellGraphic.moveTo(startX, 0);
+      
+      for (let j = 0; j < waveCount; j++) {
+        const y = -5 - j * 7;
+        // Draw a wavy line
+        this.smellGraphic.bezierCurveTo(
+          startX - waveHeight, y - 5,
+          startX + waveHeight, y - 10,
+          startX, y - 15
+        );
+      }
+    }
+    
+    // Now draw tiny poo emojis at the end of some stink lines
+    for (let i = 0; i < 3; i++) {
+      const x = -10 + i * 10;
+      const y = -25 - Math.random() * 15;
+      
+      // Draw a small poo emoji
+      // Main brown body
+      this.smellGraphic.beginFill(0x663300, 0.9);
+      this.smellGraphic.drawCircle(x, y, 5);
+      this.smellGraphic.drawCircle(x - 2, y - 3, 3);
+      this.smellGraphic.drawCircle(x + 2, y - 3, 4);
+      this.smellGraphic.endFill();
+      
+      // Darker accents
+      this.smellGraphic.beginFill(0x442200, 0.9);
+      this.smellGraphic.drawCircle(x + 1, y - 1, 1.5);
+      this.smellGraphic.drawCircle(x - 2, y - 3, 1);
+      this.smellGraphic.endFill();
+    }
+    
+    // Add to container
+    container.addChild(this.smellGraphic);
+    
+    // Ensure it's always on top
+    this.smellGraphic.zIndex = 100;
+    
+    // In production this would sort children by zIndex, but our mock doesn't need it
+    if (typeof container.sortChildren === 'function') {
+      container.sortChildren();
+    }
+  }
+  
   public getState(): HunterState {
     return this.state;
+  }
+  
+  /**
+   * Checks if the hunter is currently stuck in poo
+   */
+  public isStuckInPoo(): boolean {
+    return this.state === HunterState.STUCK_IN_POO;
   }
 }

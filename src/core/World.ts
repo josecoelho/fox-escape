@@ -4,6 +4,7 @@ import { Dragon } from '../entities/Dragon';
 import { Hunter } from '../entities/Hunter';
 import { Food } from '../entities/Food';
 import { Obstacle } from '../entities/Obstacle';
+import { Poo } from '../entities/Poo';
 import { AssetManager } from './AssetManager';
 import { InputManager } from './InputManager';
 import { MapConfig } from '../config/MapConfig';
@@ -20,6 +21,7 @@ export class World {
   private hunters: Hunter[] = [];
   private foods: Food[] = [];
   private obstacles: Obstacle[] = [];
+  private poos: Poo[] = []; // Add array to track poo
   private collisionSystem: CollisionSystem;
   private mapConfig: MapConfig;
   private assetManager: AssetManager;
@@ -97,7 +99,10 @@ export class World {
     
     // Ensure it's always on top
     this.statusGraphic.zIndex = 9999;
-    this.stage.sortChildren();
+    // In production this would sort children by zIndex, but our mock doesn't need it
+    if (typeof this.stage.sortChildren === 'function') {
+      this.stage.sortChildren();
+    }
   }
   
   // Update the status graphic based on fox hiding state
@@ -176,8 +181,10 @@ export class World {
     // We're not using foxAbilityText anymore since we have the status bar
     this.foxAbilityText = null;
     
-    // Force container to display above other elements
-    this.container.sortChildren();
+    // In production this would sort children by zIndex, but our mock doesn't need it
+    if (typeof this.container.sortChildren === 'function') {
+      this.container.sortChildren();
+    }
   }
   
   public init(): void {
@@ -241,7 +248,7 @@ export class World {
    * @returns The newly created food or null if spawning failed
    */
   public spawnFood(): Food | null {
-    let position: Vector2;
+    let position: Vector2 = new Vector2(0, 0); // Initialize with a default value
     let isValidPosition = false;
     let attempts = 0;
     const maxAttempts = 30; // Prevent infinite loops
@@ -508,6 +515,9 @@ export class World {
       this.gameState.increaseScore(removedHunterCount * 10);
     }
     
+    // Clean up inactive poos
+    this.poos = this.poos.filter(poo => poo.isActive);
+    
     // Clean up all inactive entities
     this.entities = this.entities.filter(entity => entity.isActive);
     
@@ -520,6 +530,24 @@ export class World {
   /**
    * Reset the game to its initial state
    */
+  /**
+   * Creates poo at the given position
+   * @param position The position to create the poo at
+   */
+  private createPoo(position: Vector2): Poo {
+    // Use obstacle texture since it's likely more visible than food
+    // Alternatively, food texture could work too if it's a more solid shape
+    const texture = this.assetManager.getTexture('obstacle.png');
+    
+    // Create the poo with a clearly visible starting position
+    const poo = new Poo(position, texture);
+    console.log("Created poo at position:", position.x, position.y);
+    
+    this.poos.push(poo);
+    this.addEntity(poo);
+    return poo;
+  }
+  
   private resetGame(): void {
     // Clear existing entities
     this.entities.forEach(entity => {
@@ -529,6 +557,7 @@ export class World {
     this.hunters = [];
     this.foods = [];
     this.obstacles = [];
+    this.poos = []; // Clear poos as well
     this.fox = null;
     this.dragon = null;
     
@@ -594,6 +623,12 @@ export class World {
           food.collect();
           this.fox!.collectFood();
           
+          // Create poo when fox eats food
+          if (this.fox) {
+            const pooPosition = this.fox.createPoo();
+            this.createPoo(pooPosition);
+          }
+          
           // Increase score when food is collected
           if (this.gameState) {
             this.gameState.increaseScore(5);
@@ -620,6 +655,26 @@ export class World {
         }
       });
     }
+    
+    // Handle hunters stepping in poo
+    this.hunters.forEach(hunter => {
+      if (!hunter.isActive || hunter.isStuckInPoo()) return;
+      
+      this.poos.forEach(poo => {
+        if (poo.isActive && this.collisionSystem.checkCollision(
+          hunter.position.x, hunter.position.y, hunter.width, hunter.height,
+          poo.position.x, poo.position.y, poo.width, poo.height
+        )) {
+          // Hunter steps in poo!
+          hunter.stepInPoo(this.container);
+          
+          // Award points when a hunter steps in poo
+          if (this.gameState) {
+            this.gameState.increaseScore(3);
+          }
+        }
+      });
+    });
     
     // Handle fireballs hitting hunters
     const fireballs = this.entities.filter(entity => entity.type === 'fireball');

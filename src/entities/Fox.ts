@@ -123,7 +123,19 @@ export class Fox extends Entity {
   
   public collectFood(): void {
     this.foodCollected++;
-    // Could emit an event or callback here
+    // Fox has collected food and will create poo
+    // The actual poo creation happens in the World class
+    // We'll just increment the food counter here
+  }
+  
+  /**
+   * Creates poo at the fox's current position
+   * Called by the World after the fox has eaten food
+   * @returns the position where poo should be created
+   */
+  public createPoo(): Vector2 {
+    // Return a copy of the current position
+    return this.position.copy();
   }
   
   public getFoodCollected(): number {
