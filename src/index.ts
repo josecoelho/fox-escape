@@ -22,7 +22,7 @@ async function startGame() {
   adaptedMap.width = windowWidth;
   adaptedMap.height = windowHeight;
   
-  // Adjust obstacle positions to fit the window size
+  // Adjust obstacle positions and sizes to fit the window size
   adaptedMap.obstacles = forestMap.obstacles.map((obstacle, index) => {
     // Calculate new positions proportional to window size
     const rows = 3;
@@ -30,10 +30,17 @@ async function startGame() {
     const row = Math.floor(index / cols);
     const col = index % cols;
     
+    // Scale obstacle size based on screen dimensions
+    const sizeFactor = Math.min(windowWidth, windowHeight) / 1200;
+    const scaledWidth = obstacle.width * sizeFactor;
+    const scaledHeight = obstacle.height * sizeFactor;
+    
     return {
       ...obstacle,
       x: (col + 0.5) * (windowWidth / cols) + (Math.random() * 100 - 50),
-      y: (row + 0.5) * (windowHeight / rows) + (Math.random() * 100 - 50)
+      y: (row + 0.5) * (windowHeight / rows) + (Math.random() * 100 - 50),
+      width: scaledWidth,
+      height: scaledHeight
     };
   });
   
