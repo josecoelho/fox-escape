@@ -3,8 +3,8 @@ import { Entity } from './Entity';
 import { Vector2 } from '../utils/Vector2';
 
 export class Fireball extends Entity {
-  private speed: number = 400;
-  private lifetime: number = 2; // in seconds
+  private speed: number = 800; // Increased speed even more
+  private lifetime: number = 4; // Increased lifetime even more
   private currentLifetime: number = 0;
   
   constructor(position: Vector2, texture: PIXI.Texture, direction: Vector2) {

@@ -47,6 +47,9 @@ export class World {
     // Create game state manager
     this.gameState = new GameState(stage);
     
+    // Register the resetGame method with the GameState
+    this.gameState.registerResetCallback(this.resetGame.bind(this));
+    
     // Create UI elements
     this.createUI();
     

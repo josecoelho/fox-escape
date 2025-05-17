@@ -18,11 +18,20 @@ export class TouchControls {
   private leftJoystickDirection = { x: 0, y: 0 };
   private rightJoystickDirection = { x: 0, y: 0 };
   
-  // Touch IDs for multi-touch support
-  private leftJoystickTouchId: number | null = null;
-  private rightJoystickTouchId: number | null = null;
-  private hideButtonTouchId: number | null = null;
-  private fireButtonTouchId: number | null = null;
+  // Track active touch points by identifier
+  private activeTouches: { [id: number]: {
+    control: string,
+    startX: number,
+    startY: number,
+    currentX: number, 
+    currentY: number
+  }} = {};
+  
+  // Constant values for controls
+  private static readonly LEFT_JOYSTICK = 'leftJoystick';
+  private static readonly RIGHT_JOYSTICK = 'rightJoystick';
+  private static readonly HIDE_BUTTON = 'hideButton';
+  private static readonly FIRE_BUTTON = 'fireButton';
   
   // Track if hide/fire buttons are pressed
   private hideButtonPressed: boolean = false;
@@ -203,43 +212,96 @@ export class TouchControls {
   }
   
   private setupEventListeners(): void {
+    // Explicitly enable touch events on all interactive elements
+    this.container.interactive = true;
+    this.container.interactiveChildren = true;
+    
     // Touch/pointer events for the joysticks
     this.leftJoystick.on('pointerdown', this.onLeftJoystickDown.bind(this));
+    this.leftJoystick.on('touchstart', this.onLeftJoystickDown.bind(this));
+    
     this.rightJoystick.on('pointerdown', this.onRightJoystickDown.bind(this));
+    this.rightJoystick.on('touchstart', this.onRightJoystickDown.bind(this));
     
     // Action buttons
     this.hideButton.on('pointerdown', this.onHideButtonDown.bind(this));
+    this.hideButton.on('touchstart', this.onHideButtonDown.bind(this));
     this.hideButton.on('pointerup', this.onHideButtonUp.bind(this));
+    this.hideButton.on('touchend', this.onHideButtonUp.bind(this));
     this.hideButton.on('pointerupoutside', this.onHideButtonUp.bind(this));
+    this.hideButton.on('touchendoutside', this.onHideButtonUp.bind(this));
     
     this.fireButton.on('pointerdown', this.onFireButtonDown.bind(this));
+    this.fireButton.on('touchstart', this.onFireButtonDown.bind(this));
     this.fireButton.on('pointerup', this.onFireButtonUp.bind(this));
+    this.fireButton.on('touchend', this.onFireButtonUp.bind(this));
     this.fireButton.on('pointerupoutside', this.onFireButtonUp.bind(this));
+    this.fireButton.on('touchendoutside', this.onFireButtonUp.bind(this));
     
     // Global events
     this.stage.interactive = true;
     this.stage.on('pointermove', this.onPointerMove.bind(this));
+    this.stage.on('touchmove', this.onPointerMove.bind(this));
     this.stage.on('pointerup', this.onPointerUp.bind(this));
+    this.stage.on('touchend', this.onPointerUp.bind(this));
     this.stage.on('pointerupoutside', this.onPointerUp.bind(this));
+    this.stage.on('touchendoutside', this.onPointerUp.bind(this));
   }
   
   private onLeftJoystickDown(event: AnyEvent): void {
+    const id = event.data.identifier;
+    const x = event.data.global.x;
+    const y = event.data.global.y;
+    
+    // Register this touch with the left joystick
     this.leftJoystickActive = true;
-    this.leftJoystickTouchId = event.data.identifier;
-    // Get initial position
-    this.updateLeftJoystickPosition(event.data.global.x, event.data.global.y);
+    this.activeTouches[id] = {
+      control: TouchControls.LEFT_JOYSTICK,
+      startX: this.leftJoystick.position.x,
+      startY: this.leftJoystick.position.y,
+      currentX: x,
+      currentY: y
+    };
+    
+    // Update joystick position
+    this.updateLeftJoystickPosition(x, y);
   }
   
   private onRightJoystickDown(event: AnyEvent): void {
+    const id = event.data.identifier;
+    const x = event.data.global.x;
+    const y = event.data.global.y;
+    
+    // Register this touch with the right joystick
     this.rightJoystickActive = true;
-    this.rightJoystickTouchId = event.data.identifier;
-    // Get initial position
-    this.updateRightJoystickPosition(event.data.global.x, event.data.global.y);
+    this.activeTouches[id] = {
+      control: TouchControls.RIGHT_JOYSTICK,
+      startX: this.rightJoystick.position.x,
+      startY: this.rightJoystick.position.y,
+      currentX: x,
+      currentY: y
+    };
+    
+    // Update joystick position
+    this.updateRightJoystickPosition(x, y);
   }
   
   private onHideButtonDown(event: AnyEvent): void {
+    const id = event.data.identifier;
+    const x = event.data.global.x;
+    const y = event.data.global.y;
+    
+    // Register this touch with the hide button
     this.hideButtonPressed = true;
-    this.hideButtonTouchId = event.data.identifier;
+    this.activeTouches[id] = {
+      control: TouchControls.HIDE_BUTTON,
+      startX: x,
+      startY: y,
+      currentX: x,
+      currentY: y
+    };
+    
+    // Trigger the action
     this.inputManager.setActionPressed('player1', true);
     
     // Visual feedback
@@ -247,9 +309,12 @@ export class TouchControls {
   }
   
   private onHideButtonUp(event: AnyEvent): void {
-    if (this.hideButtonTouchId === event.data.identifier) {
+    const id = event.data.identifier;
+    
+    // Check if this was a touch on the hide button
+    if (this.activeTouches[id] && this.activeTouches[id].control === TouchControls.HIDE_BUTTON) {
       this.hideButtonPressed = false;
-      this.hideButtonTouchId = null;
+      delete this.activeTouches[id];
       this.inputManager.setActionPressed('player1', false);
       
       // Visual feedback
@@ -258,8 +323,21 @@ export class TouchControls {
   }
   
   private onFireButtonDown(event: AnyEvent): void {
+    const id = event.data.identifier;
+    const x = event.data.global.x;
+    const y = event.data.global.y;
+    
+    // Register this touch with the fire button
     this.fireButtonPressed = true;
-    this.fireButtonTouchId = event.data.identifier;
+    this.activeTouches[id] = {
+      control: TouchControls.FIRE_BUTTON,
+      startX: x,
+      startY: y,
+      currentX: x,
+      currentY: y
+    };
+    
+    // Trigger the action
     this.inputManager.setKeyPressed('f', true);
     
     // Visual feedback
@@ -267,9 +345,12 @@ export class TouchControls {
   }
   
   private onFireButtonUp(event: AnyEvent): void {
-    if (this.fireButtonTouchId === event.data.identifier) {
+    const id = event.data.identifier;
+    
+    // Check if this was a touch on the fire button
+    if (this.activeTouches[id] && this.activeTouches[id].control === TouchControls.FIRE_BUTTON) {
       this.fireButtonPressed = false;
-      this.fireButtonTouchId = null;
+      delete this.activeTouches[id];
       this.inputManager.setKeyPressed('f', false);
       
       // Visual feedback
@@ -278,33 +359,51 @@ export class TouchControls {
   }
   
   private onPointerMove(event: AnyEvent): void {
-    // Handle joystick movement
-    if (this.leftJoystickActive && this.leftJoystickTouchId === event.data.identifier) {
-      this.updateLeftJoystickPosition(event.data.global.x, event.data.global.y);
-    }
+    const id = event.data.identifier;
+    const x = event.data.global.x;
+    const y = event.data.global.y;
     
-    if (this.rightJoystickActive && this.rightJoystickTouchId === event.data.identifier) {
-      this.updateRightJoystickPosition(event.data.global.x, event.data.global.y);
+    // Check if we're tracking this touch point
+    if (this.activeTouches[id]) {
+      // Update current position
+      this.activeTouches[id].currentX = x;
+      this.activeTouches[id].currentY = y;
+      
+      // Handle based on which control this touch is associated with
+      const control = this.activeTouches[id].control;
+      
+      if (control === TouchControls.LEFT_JOYSTICK) {
+        this.updateLeftJoystickPosition(x, y);
+      } else if (control === TouchControls.RIGHT_JOYSTICK) {
+        this.updateRightJoystickPosition(x, y);
+      }
+      // Buttons don't need updates on move
     }
   }
   
   private onPointerUp(event: AnyEvent): void {
-    // Handle joystick release
-    if (this.leftJoystickActive && this.leftJoystickTouchId === event.data.identifier) {
-      this.leftJoystickActive = false;
-      this.leftJoystickTouchId = null;
-      this.resetLeftJoystick();
-    }
+    const id = event.data.identifier;
     
-    if (this.rightJoystickActive && this.rightJoystickTouchId === event.data.identifier) {
-      this.rightJoystickActive = false;
-      this.rightJoystickTouchId = null;
-      this.resetRightJoystick();
+    // Check if we're tracking this touch point
+    if (this.activeTouches[id]) {
+      const control = this.activeTouches[id].control;
+      
+      // Handle based on which control this touch is associated with
+      if (control === TouchControls.LEFT_JOYSTICK) {
+        this.leftJoystickActive = false;
+        this.resetLeftJoystick();
+      } else if (control === TouchControls.RIGHT_JOYSTICK) {
+        this.rightJoystickActive = false;
+        this.resetRightJoystick();
+      } else if (control === TouchControls.HIDE_BUTTON) {
+        this.onHideButtonUp(event);
+      } else if (control === TouchControls.FIRE_BUTTON) {
+        this.onFireButtonUp(event);
+      }
+      
+      // Remove this touch from tracking
+      delete this.activeTouches[id];
     }
-    
-    // Handle button release
-    this.onHideButtonUp(event);
-    this.onFireButtonUp(event);
   }
   
   private updateLeftJoystickPosition(x: number, y: number): void {
@@ -426,16 +525,46 @@ export class TouchControls {
   public destroy(): void {
     // Remove event listeners
     this.leftJoystick.off('pointerdown');
+    this.leftJoystick.off('touchstart');
+    
     this.rightJoystick.off('pointerdown');
+    this.rightJoystick.off('touchstart');
+    
     this.hideButton.off('pointerdown');
+    this.hideButton.off('touchstart');
     this.hideButton.off('pointerup');
+    this.hideButton.off('touchend');
     this.hideButton.off('pointerupoutside');
+    this.hideButton.off('touchendoutside');
+    
     this.fireButton.off('pointerdown');
+    this.fireButton.off('touchstart');
     this.fireButton.off('pointerup');
+    this.fireButton.off('touchend');
     this.fireButton.off('pointerupoutside');
+    this.fireButton.off('touchendoutside');
+    
     this.stage.off('pointermove');
+    this.stage.off('touchmove');
     this.stage.off('pointerup');
+    this.stage.off('touchend');
     this.stage.off('pointerupoutside');
+    this.stage.off('touchendoutside');
+    
+    // Clear active touches
+    this.activeTouches = {};
+    
+    // Reset input states
+    this.leftJoystickActive = false;
+    this.rightJoystickActive = false;
+    this.hideButtonPressed = false;
+    this.fireButtonPressed = false;
+    
+    // Reset input manager
+    this.inputManager.setDirectionVector('player1', { x: 0, y: 0 });
+    this.inputManager.setDirectionVector('player2', { x: 0, y: 0 });
+    this.inputManager.setActionPressed('player1', false);
+    this.inputManager.setKeyPressed('f', false);
     
     // Remove from stage
     this.stage.removeChild(this.container);

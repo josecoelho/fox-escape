@@ -77,8 +77,12 @@ describe('Fireball', () => {
   });
   
   test('update should deactivate fireball when lifetime expires', () => {
-    // @ts-ignore - Set private field
-    fireball['currentLifetime'] = 1.9;
+    // Get the actual lifetime from the fireball
+    // @ts-ignore - Access private field
+    const lifetime = fireball['lifetime'];
+    
+    // @ts-ignore - Set private field to just before expiration
+    fireball['currentLifetime'] = lifetime - 0.1;
     
     fireball.update(0.2);
     

@@ -55,15 +55,25 @@ export class StartButton {
     // Position the button
     this.button.position.set(this.width / 2, this.height - 100);
     
-    // Make it interactive
+    // Make it interactive for both mouse and touch
     this.button.interactive = true;
+    this.button.interactiveChildren = true;
     (this.button as any).buttonMode = true;
+    
+    // Make the hitArea slightly larger than the button for easier touch
+    this.button.hitArea = new PIXI.Rectangle(-120, -60, 240, 120);
   }
   
   private setupEventListeners(): void {
+    // Use both pointer and touch events for better cross-device support
     this.button.on('pointerdown', this.onButtonDown.bind(this));
+    this.button.on('touchstart', this.onButtonDown.bind(this));
+    
     this.button.on('pointerup', this.onButtonUp.bind(this));
+    this.button.on('touchend', this.onButtonUp.bind(this));
+    
     this.button.on('pointerupoutside', this.onButtonUp.bind(this));
+    this.button.on('touchendoutside', this.onButtonUp.bind(this));
   }
   
   private onButtonDown(): void {
@@ -120,8 +130,11 @@ export class StartButton {
    */
   public destroy(): void {
     this.button.off('pointerdown');
+    this.button.off('touchstart');
     this.button.off('pointerup');
+    this.button.off('touchend');
     this.button.off('pointerupoutside');
+    this.button.off('touchendoutside');
     
     if (this.button.parent) {
       this.button.parent.removeChild(this.button);

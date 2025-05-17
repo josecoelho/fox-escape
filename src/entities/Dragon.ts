@@ -111,10 +111,20 @@ export class Dragon extends Entity {
       // Create a texture from the canvas
       const fireballTexture = PIXI.Texture.from(canvas);
       
+      // Get the shooting direction
+      const direction = this.getShootingDirection();
+      
+      // Start the fireball a bit away from the dragon
+      const startOffset = 40; // Offset distance from the dragon
+      const startPosition = new Vector2(
+        this.position.x + direction.x * startOffset,
+        this.position.y + direction.y * startOffset
+      );
+      
       const fireball = new Fireball(
-        this.position.copy(),
+        startPosition,
         fireballTexture,
-        this.getShootingDirection()
+        direction
       );
       
       console.log("Dragon shot a fireball in direction:", this.getShootingDirection());
@@ -158,9 +168,17 @@ export class Dragon extends Entity {
       // Calculate direction to target
       const direction = Vector2.subtract(targetPosition, this.position).normalize();
       
-      // Create a new fireball starting at dragon's position
+      // Start the fireball a bit away from the dragon in the direction of the target
+      // This prevents the fireball from spawning too close to the dragon
+      const startOffset = 40; // Offset distance from the dragon
+      const startPosition = new Vector2(
+        this.position.x + direction.x * startOffset,
+        this.position.y + direction.y * startOffset
+      );
+      
+      // Create a new fireball starting at the offset position
       const fireball = new Fireball(
-        this.position.copy(),
+        startPosition,
         fireballTexture,
         direction
       );

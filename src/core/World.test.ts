@@ -99,7 +99,8 @@ jest.mock('./GameState', () => {
       increaseScore: jest.fn(),
       getScore: jest.fn().mockReturnValue(0),
       resize: jest.fn(),
-      isTouchSupported: jest.fn().mockReturnValue(false)
+      isTouchSupported: jest.fn().mockReturnValue(false),
+      registerResetCallback: jest.fn()
     }))
   };
 });

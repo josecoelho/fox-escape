@@ -22,6 +22,7 @@ export class GameState {
   private isTouchDevice: boolean = false;
   private startButton: StartButton | null = null;
   private restartButton: StartButton | null = null;
+  private onResetGame: (() => void) | null = null;
   
   constructor(stage: PIXI.Container) {
     this.type = GameStateType.START_SCREEN;
@@ -40,6 +41,14 @@ export class GameState {
     
     // Start with showing the start screen
     this.showStartScreen();
+  }
+  
+  /**
+   * Register a callback to reset the game world
+   * @param callback Function to call when game should be reset
+   */
+  public registerResetCallback(callback: () => void): void {
+    this.onResetGame = callback;
   }
   
   public getState(): GameStateType {
@@ -246,6 +255,13 @@ export class GameState {
         window.innerHeight,
         'RESTART',
         () => {
+          // First reset the game world if callback is registered
+          if (this.onResetGame) {
+            this.onResetGame();
+          }
+          
+          // Then reset the game state and transition to playing
+          this.resetGame();
           this.setState(GameStateType.PLAYING);
           if (this.restartButton) this.restartButton.hide();
         }
