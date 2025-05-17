@@ -1,6 +1,12 @@
-# Fox Escape
+# Fox Escape 🦊
 
 A top-view 2D game set in the woods where one player controls a fox hiding from computer-controlled hunters, and another player controls a dragon that protects the fox by shooting fireballs at the hunters. Built with PixiJS and TypeScript.
+
+## Play the Game
+
+You can play the game online at: [https://YOUR-USERNAME.github.io/fox-escape](https://YOUR-USERNAME.github.io/fox-escape)
+
+*Note: Replace YOUR-USERNAME with your actual GitHub username after deployment.*
 
 ## Game Overview
 
@@ -8,14 +14,26 @@ A top-view 2D game set in the woods where one player controls a fox hiding from 
 - **Player 1 (Fox)**: Collect food while avoiding being seen by hunters. The fox can hide temporarily to avoid detection.
 - **Player 2 (Dragon)**: Protect the fox by shooting fireballs at hunters.
 - **Hunters**: Computer-controlled characters that patrol the map and chase the fox if spotted.
+- **Food & Poo**: When the fox eats food, it creates poo. Hunters that step in poo get stuck for 5 seconds.
+- **Score**: Earn points by collecting food, defeating hunters, and getting hunters stuck in poo.
 
 ### Controls
+
+#### Keyboard Controls
 - **Fox (Player 1)**:
   - Arrow keys to move
-  - Space to toggle hiding
+  - Space to hide (10-second cooldown, lasts 2 seconds)
 - **Dragon (Player 2)**:
   - WASD keys to move
   - F to shoot fireballs
+
+#### Touch Controls (Mobile)
+- **Fox (Left Side)**:
+  - Left joystick to move
+  - HIDE button to activate hiding ability
+- **Dragon (Right Side)**:
+  - Right joystick to move
+  - FIRE button to shoot fireballs
 
 ## Development Setup
 
