@@ -46,6 +46,18 @@ jest.mock('pixi.js', () => {
       tileScale: { set: jest.fn() }
     })),
     Text: jest.fn().mockImplementation(() => mockText),
+    Graphics: jest.fn().mockImplementation(() => ({
+      beginFill: jest.fn().mockReturnThis(),
+      drawRect: jest.fn().mockReturnThis(),
+      drawRoundedRect: jest.fn().mockReturnThis(),
+      endFill: jest.fn().mockReturnThis(),
+      clear: jest.fn().mockReturnThis(),
+      lineStyle: jest.fn().mockReturnThis(),
+      addChild: jest.fn(),
+      getChildAt: jest.fn().mockReturnValue(mockText),
+      position: { set: jest.fn() },
+      zIndex: 0
+    })),
     BlurFilter: jest.fn().mockImplementation(() => ({})),
     Ticker: Object.assign(
       jest.fn().mockImplementation(() => mockTicker),
@@ -68,10 +80,12 @@ jest.mock('./GameState', () => {
       setState: jest.fn(),
       update: jest.fn(),
       shouldSpawnHunter: jest.fn().mockReturnValue(false),
+      shouldSpawnFood: jest.fn().mockReturnValue(false),
       getDifficulty: jest.fn().mockReturnValue(1),
       increaseScore: jest.fn(),
       getScore: jest.fn().mockReturnValue(0),
-      resize: jest.fn()
+      resize: jest.fn(),
+      isTouchSupported: jest.fn().mockReturnValue(false)
     }))
   };
 });
@@ -96,6 +110,8 @@ jest.mock('../entities/Hunter', () => {
     startChasing: jest.fn(),
     stopChasing: jest.fn(),
     takeHit: jest.fn(),
+    isStuckInPoo: jest.fn().mockReturnValue(false),
+    stepInPoo: jest.fn(),
     getState: jest.fn(),
     destroy: jest.fn()
   };

@@ -17,12 +17,33 @@ jest.mock('pixi.js', () => {
       ...mockText,
       name
     })),
-    parent: { removeChild: jest.fn() }
+    parent: { removeChild: jest.fn() },
+    getChildAt: jest.fn().mockImplementation(() => mockText),
+    children: []
   };
   
   return {
     Container: jest.fn().mockImplementation(() => mockContainer),
-    Text: jest.fn().mockImplementation(() => mockText)
+    Text: jest.fn().mockImplementation(() => mockText),
+    Graphics: jest.fn().mockImplementation(() => ({
+      beginFill: jest.fn().mockReturnThis(),
+      lineStyle: jest.fn().mockReturnThis(),
+      drawRoundedRect: jest.fn().mockReturnThis(),
+      drawCircle: jest.fn().mockReturnThis(),
+      endFill: jest.fn().mockReturnThis()
+    }))
+  };
+});
+
+// Mock StartButton
+jest.mock('../ui/StartButton', () => {
+  return {
+    StartButton: jest.fn().mockImplementation(() => ({
+      show: jest.fn(),
+      hide: jest.fn(),
+      resize: jest.fn(),
+      destroy: jest.fn()
+    }))
   };
 });
 
@@ -138,5 +159,11 @@ describe('GameState', () => {
     // Difficulty should increase
     const newDifficulty = gameState.getDifficulty();
     expect(newDifficulty).toBeGreaterThan(initialDifficulty);
+  });
+  
+  test('should report touch support status correctly', () => {
+    // Since we can't easily mock the browser's touch detection in the test,
+    // we're just verifying that the method exists and returns a boolean
+    expect(typeof gameState.isTouchSupported()).toBe('boolean');
   });
 });

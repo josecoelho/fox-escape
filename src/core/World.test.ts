@@ -94,10 +94,12 @@ jest.mock('./GameState', () => {
       setState: jest.fn(),
       update: jest.fn(),
       shouldSpawnHunter: jest.fn().mockReturnValue(false),
+      shouldSpawnFood: jest.fn().mockReturnValue(false),
       getDifficulty: jest.fn().mockReturnValue(1),
       increaseScore: jest.fn(),
       getScore: jest.fn().mockReturnValue(0),
-      resize: jest.fn()
+      resize: jest.fn(),
+      isTouchSupported: jest.fn().mockReturnValue(false)
     }))
   };
 });
@@ -119,6 +121,9 @@ jest.mock('../entities/Fox', () => ({
     getHideCooldownRemaining: jest.fn().mockReturnValue(0),
     getHideDurationRemaining: jest.fn().mockReturnValue(0),
     resetHidingState: jest.fn(),
+    setMapBoundaries: jest.fn(),
+    getFoodCollected: jest.fn().mockReturnValue(0),
+    createPoo: jest.fn().mockReturnValue(new Vector2(0, 0)),
     type: 'fox',
     destroy: jest.fn()
   }))
@@ -134,6 +139,7 @@ jest.mock('../entities/Dragon', () => ({
     update: jest.fn(),
     isActive: true,
     canShoot: jest.fn().mockReturnValue(true),
+    setMapBoundaries: jest.fn(),
     shootFireball: jest.fn().mockReturnValue({
       position: new Vector2(50, 50),
       width: 10,
@@ -174,6 +180,8 @@ jest.mock('../entities/Hunter', () => ({
     startChasing: jest.fn(),
     stopChasing: jest.fn(),
     takeHit: jest.fn(),
+    isStuckInPoo: jest.fn().mockReturnValue(false),
+    stepInPoo: jest.fn(),
     type: 'hunter',
     destroy: jest.fn(),
     setSpeedMultiplier: jest.fn()
@@ -190,6 +198,19 @@ jest.mock('../entities/Food', () => ({
     isActive: true,
     collect: jest.fn(),
     type: 'food',
+    destroy: jest.fn()
+  }))
+}));
+
+jest.mock('../entities/Poo', () => ({
+  Poo: jest.fn().mockImplementation(() => ({
+    position: new Vector2(150, 150),
+    width: 30,
+    height: 30,
+    sprite: {},
+    update: jest.fn(),
+    isActive: true,
+    type: 'poo',
     destroy: jest.fn()
   }))
 }));

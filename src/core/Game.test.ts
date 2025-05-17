@@ -35,7 +35,8 @@ jest.mock('./World', () => ({
 jest.mock('./InputManager', () => ({
   InputManager: jest.fn().mockImplementation(() => ({
     init: jest.fn(),
-    destroy: jest.fn()
+    destroy: jest.fn(),
+    isTouchEnabled: jest.fn().mockReturnValue(false)
   }))
 }));
 

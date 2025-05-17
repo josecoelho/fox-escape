@@ -430,20 +430,26 @@ export class World {
     
     // Handle game state transitions
     if (this.gameState.getState() === GameStateType.START_SCREEN) {
-      // Start the game when Space is pressed on the start screen
-      const spacePressed = inputManager.isKeyPressed('Space');
-      if (spacePressed) {
-        console.log("Space pressed on start screen, starting game");
-        this.gameState.setState(GameStateType.PLAYING);
+      // For desktop: start the game when Space is pressed on the start screen
+      // For touch: handled by the StartButton in GameState
+      if (!this.gameState.isTouchSupported()) {
+        const spacePressed = inputManager.isKeyPressed('Space');
+        if (spacePressed) {
+          console.log("Space pressed on start screen, starting game");
+          this.gameState.setState(GameStateType.PLAYING);
+        }
       }
       return; // Don't update the game world while on start screen
     } else if (this.gameState.getState() === GameStateType.GAME_OVER) {
-      // Restart the game when Space is pressed on game over screen
-      const spacePressed = inputManager.isKeyPressed('Space');
-      if (spacePressed) {
-        console.log("Space pressed on game over screen, restarting game");
-        this.resetGame();
-        this.gameState.setState(GameStateType.PLAYING);
+      // For desktop: restart the game when Space is pressed on game over screen
+      // For touch: handled by the StartButton in GameState
+      if (!this.gameState.isTouchSupported()) {
+        const spacePressed = inputManager.isKeyPressed('Space');
+        if (spacePressed) {
+          console.log("Space pressed on game over screen, restarting game");
+          this.resetGame();
+          this.gameState.setState(GameStateType.PLAYING);
+        }
       }
       return; // Don't update the game world while on game over screen
     }
